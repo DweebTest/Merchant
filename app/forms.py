@@ -1,15 +1,19 @@
 from flask import current_app
 from flask_wtf import FlaskForm
+from flask_wtf.file import MultipleFileField
 from wtforms import (
     BooleanField,
+    DateField,
     EmailField,
     IntegerField,
     PasswordField,
+    SelectField,
     SelectMultipleField,
     StringField,
     SubmitField,
+    TextAreaField,
 )
-from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, URL, ValidationError
 from wtforms.widgets import CheckboxInput, ListWidget
 
 
@@ -71,3 +75,43 @@ class LookupForm(FlaskForm):
 class ConfirmForm(FlaskForm):
     """Empty form used for CSRF-protected POST buttons."""
     submit = SubmitField("Confirm")
+
+
+STATUS_CHOICES = [
+    ("open", "Open"),
+    ("in_progress", "In progress"),
+    ("done", "Done"),
+    ("no_action", "No action needed"),
+]
+PRIORITY_CHOICES = [("high", "High"), ("normal", "Normal"), ("low", "Low")]
+
+
+def at_least_one(form, field):
+    if not field.data:
+        raise ValidationError("Pick at least one.")
+
+
+class EntryForm(FlaskForm):
+    entry_date = DateField("Date", validators=[DataRequired()])
+    description = TextAreaField(
+        "Brief description",
+        validators=[DataRequired(), Length(max=10000)],
+        description="What did you learn or hear? Who said it, and why does it matter?",
+    )
+    organization = StringField("Organization", validators=[DataRequired(), Length(max=255)])
+    contact_name = StringField("Contact name", validators=[Optional(), Length(max=200)])
+    contact_title = StringField("Contact title", validators=[Optional(), Length(max=200)])
+    contact_email = EmailField("Contact email", validators=[Optional(), Email(), Length(max=255)])
+    contact_phone = StringField("Contact phone", validators=[Optional(), Length(max=50)])
+    clusters = MultiCheckboxField("Economic clusters", coerce=int, validators=[at_least_one])
+    opportunity_types = MultiCheckboxField("Opportunity types", coerce=int, validators=[at_least_one])
+    next_step = TextAreaField("Suggested next step", validators=[Optional(), Length(max=5000)])
+    college_area = StringField("College area impacted", validators=[Optional(), Length(max=150)])
+    priority = SelectField("Priority", choices=PRIORITY_CHOICES, default="normal")
+    follow_up_status = SelectField("Follow-up status", choices=STATUS_CHOICES, default="open")
+    follow_up_date = DateField("Follow up by", validators=[Optional()])
+    link_url = StringField(
+        "Link", validators=[Optional(), URL(require_tld=False, message="Enter a full web address starting with http:// or https://"), Length(max=1000)]
+    )
+    attachments = MultipleFileField("Attach files")
+    submit = SubmitField("Save entry")

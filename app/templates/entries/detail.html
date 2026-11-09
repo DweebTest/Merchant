@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "entries/_macros.html" import status_tag, priority_tag %}
+{% block title %}{{ entry.organization.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('entries.index') }}">← Knowledge base</a></p>
+<div class="card wide-card">
+  <div class="head">
+    <div>
+      <h1>{{ entry.organization.name }}</h1>
+      <p class="muted">{{ entry.entry_date | longdate }} · added by {{ entry.created_by.display_name }}</p>
+    </div>
+    {% if can_edit %}<a class="button" href="{{ url_for('entries.edit', entry_id=entry.id) }}">Edit</a>{% endif %}
+  </div>
+
+  <div class="tags">
+    {% for c in entry.clusters %}<span class="tag cluster">{{ c.name }}</span>{% endfor %}
+    {% for t in entry.opportunity_types %}<span class="tag otype">{{ t.name }}</span>{% endfor %}
+  </div>
+
+  <h2>Description</h2>
+  <p class="prewrap">{{ entry.description }}</p>
+
+  {% if entry.next_step %}
+  <h2>Suggested next step</h2>
+  <p class="prewrap">{{ entry.next_step }}</p>
+  {% endif %}
+
+  <dl class="facts">
+    <dt>Follow-up</dt>
+    <dd>
+      {{ status_tag(entry.follow_up_status) }} {{ priority_tag(entry.priority) }}
+      {% if entry.follow_up_date %}by {{ entry.follow_up_date | longdate }}{% endif %}
+      <form class="inline" method="post" action="{{ url_for('entries.set_status', entry_id=entry.id) }}">
+        {{ confirm_form.hidden_tag() }}
+        <select name="status" aria-label="Change status">
+          {% for value, label in statuses.items() %}
+          <option value="{{ value }}" {% if value == entry.follow_up_status %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Update</button>
+      </form>
+    </dd>
+    {% if entry.contact %}
+    <dt>Contact</dt>
+    <dd>
+      {{ entry.contact.name }}{% if entry.contact.title %}, {{ entry.contact.title }}{% endif %}
+      {% if entry.contact.email %}<br><a href="mailto:{{ entry.contact.email }}">{{ entry.contact.email }}</a>{% endif %}
+      {% if entry.contact.phone %}<br>{{ entry.contact.phone }}{% endif %}
+    </dd>
+    {% endif %}
+    {% if entry.college_area %}<dt>College area</dt><dd>{{ entry.college_area }}</dd>{% endif %}
+    {% if entry.link_url %}<dt>Link</dt><dd><a href="{{ entry.link_url }}" target="_blank" rel="noopener noreferrer">{{ entry.link_url | truncate(80) }}</a></dd>{% endif %}
+    {% if entry.attachments %}
+    <dt>Attachments</dt>
+    <dd><ul class="files">
+      {% for a in entry.attachments %}
+      <li><a href="{{ url_for('entries.download', attachment_id=a.id) }}">{{ a.original_filename }}</a>
+        <span class="muted">({{ [(a.size_bytes / 1024) | round(0) | int, 1] | max }} KB)</span></li>
+      {% endfor %}
+    </ul></dd>
+    {% endif %}
+    <dt>Last updated</dt><dd>{{ entry.updated_at.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+  </dl>
+
+  {% if can_edit %}
+  <form method="post" action="{{ url_for('entries.delete', entry_id=entry.id) }}"
+        onsubmit="return confirm('Delete this entry and its attachments? This cannot be undone.');">
+    {{ confirm_form.hidden_tag() }}
+    <button class="link danger" type="submit">Delete entry</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

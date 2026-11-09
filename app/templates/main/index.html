@@ -1,11 +1,35 @@
 {% extends "base.html" %}
+{% from "entries/_macros.html" import entry_card %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h1>Welcome, {{ current_user.display_name }}</h1>
-<div class="stats">
-  <div class="stat"><span class="num">{{ stats.entries }}</span><span>entries</span></div>
-  <div class="stat"><span class="num">{{ stats.clusters }}</span><span>economic clusters</span></div>
-  <div class="stat"><span class="num">{{ stats.types }}</span><span>opportunity types</span></div>
+<div class="head">
+  <h1>Welcome, {{ current_user.display_name }}</h1>
+  <a class="button primary" href="{{ url_for('entries.new') }}">+ New entry</a>
 </div>
-<p class="muted">The entry form and searchable knowledge base arrive in the next step.</p>
+
+<div class="stats">
+  <a class="stat" href="{{ url_for('entries.index') }}"><span class="num">{{ stats.entries }}</span><span>entries in total</span></a>
+  <a class="stat" href="{{ url_for('entries.index', status=['open', 'in_progress']) }}"><span class="num">{{ stats.open }}</span><span>open follow-ups</span></a>
+  <a class="stat" href="{{ url_for('entries.index', priority='high', status=['open', 'in_progress']) }}"><span class="num">{{ stats.high }}</span><span>high priority, open</span></a>
+  <a class="stat" href="{{ url_for('entries.index', mine='1') }}"><span class="num">{{ stats.mine }}</span><span>added by you</span></a>
+</div>
+
+{% if due %}
+<section>
+  <h2>Follow-ups due</h2>
+  {% for e in due %}{{ entry_card(e) }}{% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <div class="head">
+    <h2>Recent submissions</h2>
+    <a href="{{ url_for('entries.index', sort='added') }}">See all →</a>
+  </div>
+  {% for e in recent %}
+    {{ entry_card(e) }}
+  {% else %}
+    <p class="muted">Nothing here yet. <a href="{{ url_for('entries.new') }}">Add the first entry</a>.</p>
+  {% endfor %}
+</section>
 {% endblock %}

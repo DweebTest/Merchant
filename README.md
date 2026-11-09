@@ -11,8 +11,8 @@ Built with Python (Flask), MySQL 8 and server-rendered pages.
 | Step | What | State |
 |---|---|---|
 | 1 | Database, local login, users, groups, cluster and opportunity type lists | Done |
-| 2 | Entry form, search, filters, recent submissions | Next |
-| 3 | PDF reports | Planned |
+| 2 | Entry form, search, filters, recent submissions | Done |
+| 3 | PDF reports | Next |
 | 4 | Microsoft Entra SSO, split-server deployment guide | Planned |
 
 ## Run it on one machine with Docker
@@ -68,7 +68,8 @@ so share that folder from it and mount it on the app server at the same
 ## Users, roles and groups
 
 * **Admins** manage users, groups and the cluster and opportunity type lists.
-* **Contributors** add and search entries.
+* **Contributors** add and search entries. They can edit or delete their own
+  entries, and anyone can update an entry's follow-up status.
 * **Groups** organize people (for example Advancement or Applied Research).
   Each group can later be granted permissions for specific functions. The
   tables for this exist now, and `User.has_permission()` is the check to use,
