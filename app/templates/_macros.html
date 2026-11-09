@@ -1,0 +1,17 @@
+{% macro field(f, autofocus=false) %}
+  <div class="field{% if f.errors %} has-error{% endif %}">
+    {% if f.type == 'BooleanField' %}
+      <label class="check">{{ f() }} {{ f.label.text }}</label>
+    {% elif f.type == 'MultiCheckboxField' %}
+      <fieldset>
+        <legend>{{ f.label.text }}</legend>
+        {% if f.choices %}{{ f(class_='checklist') }}{% else %}<p class="muted">None yet.</p>{% endif %}
+      </fieldset>
+    {% else %}
+      {{ f.label() }}
+      {{ f(autofocus=autofocus) }}
+    {% endif %}
+    {% if f.description %}<small class="muted">{{ f.description }}</small>{% endif %}
+    {% for e in f.errors %}<small class="error">{{ e }}</small>{% endfor %}
+  </div>
+{% endmacro %}

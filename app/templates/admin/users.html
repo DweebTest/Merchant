@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Users</h1>
+  <a class="button primary" href="{{ url_for('admin.user_new') }}">Add user</a>
+</div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Groups</th><th>Status</th><th>Last sign-in</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td><a href="{{ url_for('admin.user_edit', user_id=u.id) }}">{{ u.display_name }}</a></td>
+      <td>{{ u.email }}</td>
+      <td>{{ 'Admin' if u.is_admin else 'Contributor' }}</td>
+      <td>{{ u.groups | map(attribute='name') | join(', ') or '—' }}</td>
+      <td>{% if not u.is_active %}<span class="tag off">Inactive</span>{% elif u.is_locked() %}<span class="tag warn">Locked</span>{% else %}<span class="tag on">Active</span>{% endif %}</td>
+      <td>{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'Never' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

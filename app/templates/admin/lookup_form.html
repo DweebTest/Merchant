@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ item.name if item else 'Add ' ~ spec.singular }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.lookup_list', kind=kind) }}">← {{ spec.label }}</a></p>
+<div class="card narrow">
+  <h1>{{ item.name if item else 'Add ' ~ spec.singular }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name, autofocus=true) }}
+    {{ field(form.sort_order) }}
+    {{ field(form.is_active) }}
+    <button class="primary" type="submit">Save</button>
+  </form>
+</div>
+{% endblock %}

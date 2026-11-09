@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ group.name if group else 'Add group' }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.groups') }}">← Groups</a></p>
+<div class="card">
+  <h1>{{ group.name if group else 'Add group' }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name) }}
+    {{ field(form.description) }}
+    {{ field(form.members) }}
+    <button class="primary" type="submit">Save</button>
+  </form>
+</div>
+{% endblock %}

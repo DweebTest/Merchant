@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Welcome, {{ current_user.display_name }}</h1>
+<div class="stats">
+  <div class="stat"><span class="num">{{ stats.entries }}</span><span>entries</span></div>
+  <div class="stat"><span class="num">{{ stats.clusters }}</span><span>economic clusters</span></div>
+  <div class="stat"><span class="num">{{ stats.types }}</span><span>opportunity types</span></div>
+</div>
+<p class="muted">The entry form and searchable knowledge base arrive in the next step.</p>
+{% endblock %}
