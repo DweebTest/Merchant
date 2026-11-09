@@ -17,6 +17,9 @@ Built with Python (Flask), MySQL 8 and server-rendered pages.
 
 ## Run it on one machine with Docker
 
+New to Docker? Follow the step-by-step guide in
+[docs/docker-quickstart.md](docs/docker-quickstart.md).
+
 ```sh
 cp .env.example .env
 # Edit .env: set SECRET_KEY, DB_PASSWORD and MYSQL_ROOT_PASSWORD
