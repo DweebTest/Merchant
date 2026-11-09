@@ -69,6 +69,13 @@ class LookupForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=100)])
     sort_order = IntegerField("Sort order", default=0, validators=[Optional()])
     is_active = BooleanField("Active", default=True)
+    # Only shown for opportunity types.
+    report_group = SelectField(
+        "Include in report",
+        choices=[("", "Neither"), ("funding", "Potential funding opportunities"), ("partnership", "Partnership leads")],
+        default="",
+        description="Entries with this type appear in the chosen report.",
+    )
     submit = SubmitField("Save")
 
 

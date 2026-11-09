@@ -12,8 +12,8 @@ Built with Python (Flask), MySQL 8 and server-rendered pages.
 |---|---|---|
 | 1 | Database, local login, users, groups, cluster and opportunity type lists | Done |
 | 2 | Entry form, search, filters, recent submissions | Done |
-| 3 | PDF reports | Next |
-| 4 | Microsoft Entra SSO, split-server deployment guide | Planned |
+| 3 | PDF reports | Done |
+| 4 | Microsoft Entra SSO, split-server deployment guide | Next |
 
 ## Run it on one machine with Docker
 
@@ -78,6 +78,24 @@ so share that folder from it and mount it on the app server at the same
 New users get a temporary password and must choose their own at first
 sign-in. After five wrong passwords an account is locked for 15 minutes
 (both adjustable in `.env`).
+
+## Reports
+
+Under **Reports**, anyone signed in can view these on screen or download them
+as a PDF, for any date range and set of clusters:
+
+* **Recent opportunities**: everything entered in the period, with counts by cluster.
+* **Emerging sector trends**: clusters, opportunity types and organizations,
+  compared with the period before, plus month-by-month counts.
+* **Potential funding opportunities** and **Partnership leads**: entries whose
+  opportunity types are marked for that report. By default donors, sponsors and
+  grants count as funding, and partnership and applied research count as
+  partnership leads. Admins can change this on the Opportunity types page.
+* **Priority follow-ups**: open follow-ups that are overdue, due within two
+  weeks, or high priority.
+
+PDFs are made with ReportLab, which is pure Python, so nothing extra needs
+installing on Windows or Linux.
 
 ## Tests
 

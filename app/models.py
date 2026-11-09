@@ -137,6 +137,11 @@ class Cluster(LookupMixin, db.Model):
 class OpportunityType(LookupMixin, db.Model):
     __tablename__ = "opportunity_types"
 
+    REPORT_GROUPS = {"funding": "Potential funding opportunities", "partnership": "Partnership leads"}
+
+    # Which report this type feeds, if any: "funding", "partnership" or None.
+    report_group = db.Column(db.String(20), index=True)
+
 
 # --- Knowledge base ---------------------------------------------------------
 

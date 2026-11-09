@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ report.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('reports.index') }}">← Reports</a></p>
+<div class="head">
+  <div>
+    <h1>{{ report.title }}</h1>
+    <p class="muted">{{ report.period }} · {{ report.filters }}</p>
+  </div>
+  <a class="button primary" href="{{ url_for('reports.pdf', key=report.key) }}{% if query %}?{{ query }}{% endif %}">Download PDF</a>
+</div>
+
+<form class="report-filters" method="get">
+  {% if spec.uses_period %}
+  <label class="small">Period
+    <select name="range" onchange="this.form.from.value=''; this.form.to.value='';">
+      <option value="">Custom dates</option>
+      {% for k, label in presets.items() %}
+      <option value="{{ k }}" {% if request.args.get('range') == k or (not request.args.get('range') and not request.args.get('from') and k|int == spec.default_days) %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="small">From <input type="date" name="from" value="{{ request.args.get('from', '') }}" onchange="this.form.range.value='';"></label>
+  <label class="small">To <input type="date" name="to" value="{{ request.args.get('to', '') }}" onchange="this.form.range.value='';"></label>
+  {% endif %}
+  <details class="cluster-pick">
+    <summary>Clusters{% if cluster_ids %} ({{ cluster_ids|length }}){% else %} (all){% endif %}</summary>
+    <div class="cluster-options">
+      {% for c in clusters %}
+      <label class="check"><input type="checkbox" name="cluster" value="{{ c.id }}" {% if c.id in cluster_ids %}checked{% endif %}> {{ c.name }}</label>
+      {% endfor %}
+    </div>
+  </details>
+  <button type="submit">Update</button>
+</form>
+
+{% if report.summary %}
+<div class="stats">
+  {% for label, value in report.summary %}
+  <div class="stat"><span class="num">{{ value }}</span><span>{{ label }}</span></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% for section in report.sections %}
+<section>
+  <h2>{{ section.heading }}</h2>
+  {% if section.intro %}<p class="muted">{{ section.intro }}</p>{% endif %}
+  {% if not section.rows %}
+    <p class="muted">{{ section.empty_text }}</p>
+  {% else %}
+    {% if section.chart %}
+      {% set top = section.chart | map(attribute=1) | max %}
+      <div class="bars">
+        {% for label, value in section.chart if value %}
+        <div class="bar-row">
+          <span class="bar-label">{{ label }}</span>
+          <span class="bar-track"><span class="bar" style="width: {{ (value / top * 100) | round(1) }}%"></span></span>
+          <span class="bar-value">{{ value }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead><tr>{% for c in section.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in section.rows %}
+          <tr>{% for v in row %}<td class="prewrap">{{ v }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

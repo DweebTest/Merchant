@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h1>Reports</h1>
+<p class="muted">Open a report to choose its dates and clusters, then view it here or download it as a PDF.</p>
+<div class="report-list">
+  {% for spec in specs %}
+  <a class="report-card" href="{{ url_for('reports.view', key=spec.key) }}">
+    <h2>{{ spec.title }}</h2>
+    <p class="muted">{{ spec.description }}</p>
+    {% if spec.uses_period %}<span class="tag off">Default: last {{ spec.default_days }} days</span>{% else %}<span class="tag off">Current state</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
