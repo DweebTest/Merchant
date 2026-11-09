@@ -231,3 +231,18 @@ class Attachment(db.Model):
 
     entry = db.relationship("Entry", back_populates="attachments")
     uploaded_by = db.relationship("User")
+
+
+class SavedFilter(db.Model):
+    """A named knowledge base search, kept for one person or shared with everyone."""
+    __tablename__ = "saved_filters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    # The knowledge base query string, e.g. "cluster=3&status=open&range=30".
+    query = db.Column(db.String(2000), nullable=False, default="")
+    is_shared = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    user = db.relationship("User")

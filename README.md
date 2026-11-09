@@ -79,6 +79,15 @@ New users get a temporary password and must choose their own at first
 sign-in. After five wrong passwords an account is locked for 15 minutes
 (both adjustable in `.env`).
 
+## Entry shortcuts
+
+* Picking an organization that already has entries on **New entry** fills in
+  its clusters, opportunity types, contact, college area and link from its most
+  recent entry. Those sections are locked (greyed out) until you press **Edit**.
+* On the **Knowledge base**, any set of filters can be saved with a name, either
+  just for you or shared with everyone. Saved filters appear as buttons above
+  the results.
+
 ## Reports
 
 Under **Reports**, anyone signed in can view these on screen or download them
