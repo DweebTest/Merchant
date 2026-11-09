@@ -78,3 +78,18 @@ def test_contributor_cannot_open_admin(client, app):
 
 def test_health(client):
     assert client.get("/health").get_json() == {"status": "ok"}
+
+
+def test_create_admin_resets_password_and_unlocks(app, client):
+    make_user("boss@example.com", "old-password-1")
+    for _ in range(app.config["MAX_FAILED_LOGINS"]):
+        login(client, "boss@example.com", "wrong")
+    assert login(client, "boss@example.com", "old-password-1").status_code == 429
+
+    result = app.test_cli_runner().invoke(
+        args=["create-admin", "--email", "Boss@Example.com", "--name", "Boss", "--password", "new-password-22"]
+    )
+    assert result.exit_code == 0, result.output
+    assert login(client, "boss@example.com", "new-password-22").status_code == 302
+    user = db.session.query(User).filter_by(email="boss@example.com").one()
+    assert user.is_admin and not user.is_locked()
