@@ -97,6 +97,13 @@ as a PDF, for any date range and set of clusters:
 PDFs are made with ReportLab, which is pure Python, so nothing extra needs
 installing on Windows or Linux.
 
+## Demo data, backups and starting fresh
+
+`flask demo-data load` fills Merchant with realistic sample data and
+`flask demo-data clear` removes it again without touching real data. See
+[docs/data-management.md](docs/data-management.md) for that, plus backing up,
+restoring and wiping everything before going live.
+
 ## Tests
 
 ```sh
