@@ -40,6 +40,9 @@ services:
     volumes:
       # Attachments folder. On one machine it sits next to the database volume.
       - uploads:/data/uploads
+      # Personal themes: read live from this folder, so adding or editing one
+      # only needs a browser refresh.
+      - ./app/static/themes-local:/app/app/static/themes-local:ro
 
 volumes:
   mysql-data:

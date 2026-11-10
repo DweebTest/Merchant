@@ -6,8 +6,9 @@ themes stay on your machine and never reach the repository.
 
 Each file appears in the **Look** menu (bottom of the menu bar) under its file
 name, for example `my-theme.css` shows as "My Theme". It is loaded after
-`css/app.css`, so it only needs to restyle. With Docker, run
-`docker compose up -d --build` after adding or changing a file here.
+`css/app.css`, so it only needs to restyle. Docker reads this folder live, so
+a new or edited theme shows up when you refresh the page (press Ctrl+F5 if the
+browser holds on to the old version). No rebuild needed.
 
 The markup hooks a theme can use are listed at the top of
 `app/static/css/themes/orbit.css`.

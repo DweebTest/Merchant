@@ -19,6 +19,9 @@ services:
       - /mnt/merchant-files:/data/uploads
       # Identity provider metadata (saml/idp-metadata.xml), if you use a file.
       - ./saml:/app/saml:ro
+      # Personal themes: read live from this folder, so adding or editing one
+      # only needs a browser refresh.
+      - ./app/static/themes-local:/app/app/static/themes-local:ro
     expose:
       - "8000"
 
