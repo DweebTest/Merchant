@@ -62,9 +62,21 @@ class Config:
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
     REMEMBER_COOKIE_HTTPONLY = True
 
-    # Authentication methods. Entra SSO arrives in step 4; local login stays
-    # available so you can test, and can be switched off later.
+    # Email-and-password sign-in. Turn off once everyone uses Microsoft sign-in.
     LOCAL_LOGIN_ENABLED = _bool("LOCAL_LOGIN_ENABLED", True)
+
+    # Microsoft Entra ID sign-in. Shown on the sign-in page once all three are set.
+    ENTRA_TENANT_ID = os.environ.get("ENTRA_TENANT_ID", "").strip()
+    ENTRA_CLIENT_ID = os.environ.get("ENTRA_CLIENT_ID", "").strip()
+    ENTRA_CLIENT_SECRET = os.environ.get("ENTRA_CLIENT_SECRET", "").strip()
+    # Optional: the exact redirect URI registered in Entra. Defaults to
+    # <this site>/login/microsoft/callback.
+    ENTRA_REDIRECT_URI = os.environ.get("ENTRA_REDIRECT_URI", "").strip()
+    ENTRA_AUTHORITY_HOST = os.environ.get("ENTRA_AUTHORITY_HOST", "https://login.microsoftonline.com").rstrip("/")
+
+    # Set to 1 when Merchant runs behind a reverse proxy (IIS, nginx, a load
+    # balancer) that handles HTTPS, so links and redirects use https://.
+    TRUSTED_PROXIES = int(os.environ.get("TRUSTED_PROXIES", "0"))
 
 
 class TestConfig(Config):

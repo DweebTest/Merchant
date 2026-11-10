@@ -70,17 +70,19 @@ def user_new():
         email = form.email.data.strip().lower()
         if db.session.scalar(select(User).where(User.email == email)):
             form.email.errors.append("Someone already has this email.")
-        elif not form.password.data:
-            form.password.errors.append("Set a temporary password for a new user.")
+        elif form.auth_provider.data == "local" and not form.password.data:
+            form.password.errors.append("Set a temporary password, or choose Microsoft only.")
         else:
             user = User(
                 email=email,
                 display_name=form.display_name.data.strip(),
+                auth_provider=form.auth_provider.data,
                 is_admin=form.is_admin.data,
                 is_active_flag=form.is_active.data,
-                must_change_password=True,
+                must_change_password=form.auth_provider.data == "local",
             )
-            user.set_password(form.password.data)
+            if form.auth_provider.data == "local":
+                user.set_password(form.password.data)
             user.groups = [db.session.get(Group, gid) for gid in form.groups.data]
             db.session.add(user)
             db.session.commit()
@@ -105,17 +107,27 @@ def user_edit(user_id):
         email = form.email.data.strip().lower()
         clash = db.session.scalar(select(User).where(User.email == email, User.id != user.id))
         losing_admin = user.is_admin and (not form.is_admin.data or not form.is_active.data)
+        needs_password = form.auth_provider.data == "local" and not user.password_hash and not form.password.data
         if clash:
             form.email.errors.append("Someone already has this email.")
         elif losing_admin and _active_admin_count(excluding=user) == 0:
             flash("Keep at least one active administrator.", "error")
+        elif needs_password:
+            form.password.errors.append("Set a temporary password to switch this person to password sign-in.")
         else:
+            if user.external_id and email != user.email:
+                # A new email means a different person may sign in with Microsoft; relink on next sign-in.
+                user.external_id = None
             user.email = email
             user.display_name = form.display_name.data.strip()
+            user.auth_provider = form.auth_provider.data
+            if user.auth_provider == "entra":
+                user.password_hash = None
+                user.must_change_password = False
             user.is_admin = form.is_admin.data
             user.is_active_flag = form.is_active.data
             user.groups = [db.session.get(Group, gid) for gid in form.groups.data]
-            if form.password.data:
+            if form.password.data and user.auth_provider == "local":
                 user.set_password(form.password.data)
                 user.must_change_password = True
                 user.failed_login_count = 0

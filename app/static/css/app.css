@@ -205,3 +205,9 @@ form.inline button { padding: .25rem .7rem; }
 .save-filter summary { cursor: pointer; color: var(--accent); font-weight: 600; }
 .save-filter form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0 .25rem; }
 .save-filter input[type=text] { flex: 1; min-width: 200px; width: auto; }
+
+/* --- Microsoft sign-in -------------------------------------------------- */
+.ms-button { display: flex; align-items: center; justify-content: center; gap: .6rem; font-weight: 600;
+  margin: .5rem 0; text-align: center; }
+.or { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; margin: 1rem 0; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--border); }

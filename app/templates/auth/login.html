@@ -6,13 +6,30 @@
 <div class="card narrow">
   <h1>Merchant</h1>
   <p class="muted">Market intelligence and opportunities</p>
+
+  {% if entra_enabled %}
+  <a class="button ms-button wide" href="{{ url_for('auth.microsoft_login', next=request.args.get('next')) }}">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+    Sign in with Microsoft
+  </a>
+  {% endif %}
+
+  {% if entra_enabled and local_login_enabled %}
+  <div class="or"><span>or use your Merchant password</span></div>
+  {% endif %}
+
+  {% if local_login_enabled %}
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
-    {{ field(form.email, autofocus=true) }}
+    {{ field(form.email, autofocus=not entra_enabled) }}
     {{ field(form.password) }}
     {{ field(form.remember) }}
-    <button class="primary wide" type="submit">Sign in</button>
+    <button class="{{ '' if entra_enabled else 'primary ' }}wide" type="submit">Sign in</button>
   </form>
-  {# Step 4 adds a "Sign in with Microsoft" button here. #}
+  {% endif %}
+
+  {% if not entra_enabled and not local_login_enabled %}
+  <p class="error">No sign-in method is turned on. An administrator needs to check the settings.</p>
+  {% endif %}
 </div>
 {% endblock %}

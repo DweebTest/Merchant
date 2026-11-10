@@ -13,7 +13,7 @@ Built with Python (Flask), MySQL 8 and server-rendered pages.
 | 1 | Database, local login, users, groups, cluster and opportunity type lists | Done |
 | 2 | Entry form, search, filters, recent submissions | Done |
 | 3 | PDF reports | Done |
-| 4 | Microsoft Entra SSO, split-server deployment guide | Next |
+| 4 | Microsoft Entra SSO, split-server deployment guide | Done |
 
 ## Run it on one machine with Docker
 
@@ -63,7 +63,8 @@ open between the two.
 
 Attachments are stored in `UPLOAD_FOLDER`. They live on the database server,
 so share that folder from it and mount it on the app server at the same
-`UPLOAD_FOLDER` path. Step 4 adds a full guide.
+`UPLOAD_FOLDER` path. The full walkthrough, including HTTPS, is in
+[docs/split-servers.md](docs/split-servers.md).
 
 ## Users, roles and groups
 
@@ -78,6 +79,16 @@ so share that folder from it and mount it on the app server at the same
 New users get a temporary password and must choose their own at first
 sign-in. After five wrong passwords an account is locked for 15 minutes
 (both adjustable in `.env`).
+
+## Signing in with Microsoft
+
+Once IT registers Merchant in Microsoft Entra ID and you put three values in
+`.env`, the sign-in page shows **Sign in with Microsoft**. Only people an admin
+has already added in Merchant can get in; Merchant matches them by email the
+first time and by their Microsoft account ID after that. Anyone else is told to
+ask an administrator. Each user's sign-in method is either *Merchant password
+(and Microsoft)* or *Microsoft only*. Setup steps for you and IT are in
+[docs/entra-sso.md](docs/entra-sso.md).
 
 ## Entry shortcuts
 

@@ -8,6 +8,7 @@ from sqlalchemy import select
 from ..extensions import db
 from ..forms import ChangePasswordForm, LoginForm
 from ..models import User, utcnow
+from .entra import entra_enabled, finish_login, start_login
 
 bp = Blueprint("auth", __name__)
 
@@ -26,10 +27,13 @@ def _safe_next(target):
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
-    if not current_app.config["LOCAL_LOGIN_ENABLED"]:
-        abort(404)
+    local_enabled = current_app.config["LOCAL_LOGIN_ENABLED"]
+    if not local_enabled and not entra_enabled():
+        current_app.logger.error("No sign-in method is enabled: set LOCAL_LOGIN_ENABLED or the ENTRA_* settings.")
 
     form = LoginForm()
+    if request.method == "POST" and not local_enabled:
+        abort(404)
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
         user = db.session.scalar(select(User).where(User.email == email))
@@ -57,6 +61,7 @@ def login():
         user.last_login_at = utcnow()
         db.session.commit()
         login_user(user, remember=form.remember.data)
+        session["auth_method"] = "local"
         return redirect(_safe_next(request.args.get("next")) or url_for("main.index"))
 
     return render_template("auth/login.html", form=form)
@@ -90,3 +95,19 @@ def change_password():
             flash("Password changed.", "success")
             return redirect(url_for("main.index"))
     return render_template("auth/change_password.html", form=form)
+
+
+@bp.route("/login/microsoft")
+def microsoft_login():
+    if not entra_enabled():
+        abort(404)
+    if current_user.is_authenticated:
+        return redirect(url_for("main.index"))
+    return start_login()
+
+
+@bp.route("/login/microsoft/callback")
+def microsoft_callback():
+    if not entra_enabled():
+        abort(404)
+    return finish_login()
