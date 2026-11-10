@@ -9,3 +9,6 @@ instance/
 # Personal themes stay on this machine.
 app/static/themes-local/*
 !app/static/themes-local/README.md
+
+# Identity provider metadata for SAML sign-in (machine-specific).
+saml/

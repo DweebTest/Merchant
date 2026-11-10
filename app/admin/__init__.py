@@ -71,7 +71,7 @@ def user_new():
         if db.session.scalar(select(User).where(User.email == email)):
             form.email.errors.append("Someone already has this email.")
         elif form.auth_provider.data == "local" and not form.password.data:
-            form.password.errors.append("Set a temporary password, or choose Microsoft only.")
+            form.password.errors.append("Set a temporary password, or choose single sign-on only.")
         else:
             user = User(
                 email=email,
@@ -115,13 +115,14 @@ def user_edit(user_id):
         elif needs_password:
             form.password.errors.append("Set a temporary password to switch this person to password sign-in.")
         else:
-            if user.external_id and email != user.email:
-                # A new email means a different person may sign in with Microsoft; relink on next sign-in.
+            if email != user.email:
+                # A new email means a different person may sign in; relink at their next single sign-on.
                 user.external_id = None
+                user.saml_name_id = None
             user.email = email
             user.display_name = form.display_name.data.strip()
             user.auth_provider = form.auth_provider.data
-            if user.auth_provider == "entra":
+            if user.auth_provider != "local":
                 user.password_hash = None
                 user.must_change_password = False
             user.is_admin = form.is_admin.data

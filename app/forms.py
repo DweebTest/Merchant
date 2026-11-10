@@ -54,9 +54,10 @@ class UserForm(FlaskForm):
     )
     auth_provider = SelectField(
         "Sign-in method",
-        choices=[("local", "Merchant password (and Microsoft, once it's set up)"), ("entra", "Microsoft only")],
+        choices=[("local", "Merchant password (and single sign-on, if it's set up)"),
+                 ("sso", "Single sign-on only (Microsoft or AWS, no password)")],
         default="local",
-        description="Microsoft sign-in matches people by this email address.",
+        description="Single sign-on matches people by this email address the first time.",
     )
     is_admin = BooleanField("Administrator")
     is_active = BooleanField("Active", default=True)

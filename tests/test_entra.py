@@ -66,7 +66,7 @@ def test_redirect_uri_and_authority(entra_app, client):
 
 
 def test_admin_added_user_signs_in_and_is_linked(entra_app, client):
-    make_user("pat@college.example", "unused-password-1", auth_provider="entra").password_hash = None
+    make_user("pat@college.example", "unused-password-1", auth_provider="sso").password_hash = None
     db.session.commit()
     resp = sign_in(client, claims(), next_url="/reports/")
     assert resp.status_code == 302 and resp.headers["Location"] == "/reports/"
@@ -147,21 +147,21 @@ def test_local_login_can_be_turned_off(entra_app, client):
 
 
 def test_microsoft_only_user_cannot_use_password(entra_app, client):
-    make_user("pat@college.example", "x-password-123", auth_provider="entra")
+    make_user("pat@college.example", "x-password-123", auth_provider="sso")
     assert login(client, "pat@college.example", "x-password-123").status_code == 401
 
 
 def test_admin_creates_microsoft_only_user(admin_client, app):
     resp = admin_client.post("/admin/users/new", data={
-        "email": "new@college.example", "display_name": "New", "auth_provider": "entra", "is_active": "y",
+        "email": "new@college.example", "display_name": "New", "auth_provider": "sso", "is_active": "y",
     })
     assert resp.status_code == 302
     user = db.session.scalar(select(User).where(User.email == "new@college.example"))
-    assert user.auth_provider == "entra" and user.password_hash is None and not user.must_change_password
+    assert user.auth_provider == "sso" and user.password_hash is None and not user.must_change_password
 
 
 def test_switching_to_password_needs_one(admin_client, app):
-    user = make_user("ms@college.example", "x-password-123", auth_provider="entra")
+    user = make_user("ms@college.example", "x-password-123", auth_provider="sso")
     user.password_hash = None
     db.session.commit()
     resp = admin_client.post(f"/admin/users/{user.id}", data={

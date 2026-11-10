@@ -74,6 +74,18 @@ class Config:
     ENTRA_REDIRECT_URI = os.environ.get("ENTRA_REDIRECT_URI", "").strip()
     ENTRA_AUTHORITY_HOST = os.environ.get("ENTRA_AUTHORITY_HOST", "https://login.microsoftonline.com").rstrip("/")
 
+    # SAML 2.0 single sign-on (AWS IAM Identity Center, or any SAML identity
+    # provider). Turned on by giving the identity provider's metadata, either as
+    # a URL or as a downloaded XML file. See docs/aws-lab.md.
+    SAML_IDP_METADATA_URL = os.environ.get("SAML_IDP_METADATA_URL", "").strip()
+    SAML_IDP_METADATA_FILE = os.environ.get("SAML_IDP_METADATA_FILE", "").strip()
+    # Text on the sign-in button.
+    SAML_BUTTON_LABEL = os.environ.get("SAML_BUTTON_LABEL", "Sign in with AWS").strip() or "Sign in with AWS"
+    # Optional: Merchant's public address, e.g. https://merchant.example.edu, if
+    # it can't be worked out from requests. Used for the SAML entity id and
+    # reply (ACS) address.
+    SAML_SP_BASE_URL = os.environ.get("SAML_SP_BASE_URL", "").strip().rstrip("/")
+
     # Set to 1 when Merchant runs behind a reverse proxy (IIS, nginx, a load
     # balancer) that handles HTTPS, so links and redirects use https://.
     TRUSTED_PROXIES = int(os.environ.get("TRUSTED_PROXIES", "0"))

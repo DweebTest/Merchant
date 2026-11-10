@@ -1,0 +1,42 @@
+# App server for a split setup (database on another server), with HTTPS.
+# Used by the AWS lab in docs/aws-lab.md, but works on any Linux server:
+#   docker compose -f docker-compose.aws.yml up -d --build
+#
+# Needs in .env: SECRET_KEY, DB_HOST (the database server), DB_PASSWORD,
+# SITE_ADDRESS (the public host name) and the SAML_* or ENTRA_* settings.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      UPLOAD_FOLDER: /data/uploads
+      TRUSTED_PROXIES: "1"
+      SESSION_COOKIE_SECURE: "true"
+    volumes:
+      # The attachments share from the database server, mounted on this host.
+      - /mnt/merchant-files:/data/uploads
+      # Identity provider metadata (saml/idp-metadata.xml), if you use a file.
+      - ./saml:/app/saml:ro
+    expose:
+      - "8000"
+
+  proxy:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -61,7 +61,7 @@ def create_app(config_class=None):
         if (
             current_user.is_authenticated
             and current_user.must_change_password
-            and session.get("auth_method") != "microsoft"
+            and session.get("auth_method") not in ("microsoft", "saml")
             and request.endpoint not in {"auth.change_password", "auth.logout", "static"}
         ):
             return redirect(url_for("auth.change_password"))
@@ -92,7 +92,13 @@ def create_app(config_class=None):
 
     @app.context_processor
     def sign_in_options():
-        return {"entra_enabled": entra_enabled(app), "local_login_enabled": app.config["LOCAL_LOGIN_ENABLED"]}
+        from .auth.saml import saml_enabled
+        return {
+            "entra_enabled": entra_enabled(app),
+            "saml_enabled": saml_enabled(app),
+            "saml_label": app.config["SAML_BUTTON_LABEL"],
+            "local_login_enabled": app.config["LOCAL_LOGIN_ENABLED"],
+        }
 
     from .cli import register_cli
     from .demo import register_demo_cli

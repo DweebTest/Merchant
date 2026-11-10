@@ -8,6 +8,8 @@ from sqlalchemy import select
 from ..extensions import db
 from ..forms import ChangePasswordForm, LoginForm
 from ..models import User, utcnow
+from ..extensions import csrf
+from . import saml
 from .entra import entra_enabled, finish_login, start_login
 
 bp = Blueprint("auth", __name__)
@@ -28,8 +30,9 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
     local_enabled = current_app.config["LOCAL_LOGIN_ENABLED"]
-    if not local_enabled and not entra_enabled():
-        current_app.logger.error("No sign-in method is enabled: set LOCAL_LOGIN_ENABLED or the ENTRA_* settings.")
+    if not local_enabled and not entra_enabled() and not saml.saml_enabled():
+        current_app.logger.error(
+            "No sign-in method is enabled: set LOCAL_LOGIN_ENABLED, the ENTRA_* settings or the SAML_* settings.")
 
     form = LoginForm()
     if request.method == "POST" and not local_enabled:
@@ -111,3 +114,27 @@ def microsoft_callback():
     if not entra_enabled():
         abort(404)
     return finish_login()
+
+
+@bp.route("/login/saml")
+def saml_login():
+    if not saml.saml_enabled():
+        abort(404)
+    if current_user.is_authenticated:
+        return redirect(url_for("main.index"))
+    return saml.start_login()
+
+
+@bp.route("/login/saml/acs", methods=["POST"])
+@csrf.exempt  # The identity provider posts here; the signed SAML response and RelayState protect it.
+def saml_acs():
+    if not saml.saml_enabled():
+        abort(404)
+    return saml.finish_login()
+
+
+@bp.route("/saml/metadata")
+def saml_metadata():
+    if not saml.saml_enabled():
+        abort(404)
+    return saml.metadata()
