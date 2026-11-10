@@ -5,7 +5,7 @@
 <p><a href="{{ url_for('entries.detail', entry_id=entry.id) if entry else url_for('entries.index') }}">← {{ 'Back to entry' if entry else 'Knowledge base' }}</a></p>
 <div class="card wide-card">
   <h1>{{ 'Edit entry' if entry else 'New entry' }}</h1>
-  <form method="post" enctype="multipart/form-data" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate id="entry-form"{% if not entry %} data-prefill-url="{{ url_for('entries.org_defaults') }}"{% endif %}>
     {{ form.hidden_tag() }}
 
     <div class="grid-2">
@@ -20,9 +20,11 @@
         {% for e in form.organization.errors %}<small class="error">{{ e }}</small>{% endfor %}
       </div>
     </div>
+    <div id="prefill-note" class="prefill-note" role="status" hidden></div>
 
     {{ field(form.description) }}
 
+    <div class="lockable" data-section="contact">
     <details class="contact-box" {% if form.contact_name.data %}open{% endif %}>
       <summary>Contact (optional)</summary>
       <div class="grid-2">
@@ -32,9 +34,10 @@
         {{ field(form.contact_phone) }}
       </div>
     </details>
+    </div>
 
-    {{ field(form.clusters) }}
-    {{ field(form.opportunity_types) }}
+    <div class="lockable" data-section="clusters">{{ field(form.clusters) }}</div>
+    <div class="lockable" data-section="types">{{ field(form.opportunity_types) }}</div>
     {{ field(form.next_step) }}
 
     <div class="grid-3">
@@ -43,9 +46,11 @@
       {{ field(form.follow_up_date) }}
     </div>
 
+    <div class="lockable" data-section="extra">
     <div class="grid-2">
       {{ field(form.college_area) }}
       {{ field(form.link_url) }}
+    </div>
     </div>
 
     {% if entry and entry.attachments %}
@@ -80,4 +85,5 @@
     {% endfor %}
   {% endif %}
 </div>
+{% if not entry %}<script src="{{ url_for('static', filename='js/entry-form.js') }}" defer></script>{% endif %}
 {% endblock %}

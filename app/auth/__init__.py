@@ -1,7 +1,7 @@
 from datetime import timedelta
 from urllib.parse import urlsplit
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import select
 
@@ -66,6 +66,8 @@ def login():
 @login_required
 def logout():
     logout_user()
+    # Drop everything tied to the old session, including unread messages.
+    session.clear()
     flash("You're signed out.", "info")
     return redirect(url_for("auth.login"))
 

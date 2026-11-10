@@ -12,6 +12,25 @@
   <button class="primary" type="submit">Search</button>
 </form>
 
+{% if saved_filters %}
+<div class="saved-filters">
+  <span class="muted">Saved:</span>
+  {% for f in saved_filters %}
+  <span class="saved-chip{% if f.query == current_query %} active{% endif %}">
+    <a href="{{ url_for('entries.index') }}?{{ f.query }}" title="{% if f.is_shared %}Shared by {{ f.user.display_name }}{% else %}Only you{% endif %}">{{ f.name }}</a>
+    {% if f.is_shared %}<span class="shared-mark" aria-label="Shared">👥</span>{% endif %}
+    {% if f.user_id == current_user.id or current_user.is_admin %}
+    <form method="post" action="{{ url_for('entries.delete_filter', filter_id=f.id) }}"
+          onsubmit="return confirm('Delete this saved filter?');">
+      {{ confirm_form.hidden_tag() }}
+      <button class="link chip-x" type="submit" aria-label="Delete saved filter">×</button>
+    </form>
+    {% endif %}
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="browse">
   <details class="filter-panel" id="filter-panel" open>
   <summary>Filters{% if filtered %} (on){% endif %}</summary>
@@ -83,6 +102,19 @@
   </script>
 
   <section class="results">
+    {% if filtered %}
+    <details class="save-filter">
+      <summary>Save this filter</summary>
+      <form method="post" action="{{ url_for('entries.save_filter') }}">
+        {{ confirm_form.hidden_tag() }}
+        <input type="hidden" name="query" value="{{ current_query }}">
+        <input type="text" name="name" maxlength="100" required placeholder="Name, e.g. Open energy leads" aria-label="Filter name">
+        <label class="check"><input type="checkbox" name="shared" value="1"> Share with everyone</label>
+        <button class="primary" type="submit">Save</button>
+      </form>
+      <small class="muted">Saving with a name you've already used updates that filter.</small>
+    </details>
+    {% endif %}
     <p class="muted count">
       {{ page.total }} {{ 'entry' if page.total == 1 else 'entries' }}{% if filtered %} match{% if page.total == 1 %}es{% endif %} your search{% endif %}.
     </p>

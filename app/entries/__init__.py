@@ -2,7 +2,7 @@
 import os
 import uuid
 from datetime import date, timedelta
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from flask import (
     Blueprint,
@@ -28,6 +28,7 @@ from ..models import (
     Entry,
     OpportunityType,
     Organization,
+    SavedFilter,
     entry_clusters,
     entry_opportunity_types,
 )
@@ -255,10 +256,51 @@ def index():
     all_types = db.session.scalars(select(OpportunityType).order_by(OpportunityType.sort_order, OpportunityType.name)).all()
     filtered = any([args["q"], args["clusters"], args["types"], args["date_from"], args["date_to"],
                     args["status"], args["priority"], args["mine"]])
+    saved = db.session.scalars(
+        select(SavedFilter)
+        .where(or_(SavedFilter.user_id == current_user.id, SavedFilter.is_shared.is_(True)))
+        .order_by(func.lower(SavedFilter.name))
+    ).all()
     return render_template(
         "entries/list.html", page=page, args=args, clusters=all_clusters, types=all_types,
+        saved_filters=saved, current_query=clean_query(request.query_string.decode()),
+        confirm_form=ConfirmForm(),
         statuses=STATUS_CHOICES, priorities=PRIORITY_CHOICES, presets=DATE_PRESETS, filtered=filtered,
     )
+
+
+@bp.route("/org-defaults")
+@login_required
+def org_defaults():
+    """Details from an organization's most recent entry, used to pre-fill the form."""
+    name = " ".join((request.args.get("name") or "").split())
+    if not name:
+        return {"found": False}
+    org = db.session.scalar(select(Organization).where(func.lower(Organization.name) == name.lower()))
+    if org is None:
+        return {"found": False}
+    last = db.session.scalar(
+        select(Entry).where(Entry.organization_id == org.id)
+        .order_by(Entry.entry_date.desc(), Entry.id.desc()).limit(1)
+    )
+    if last is None:
+        return {"found": True, "organization": org.name, "has_entry": False}
+    contact = last.contact
+    return {
+        "found": True,
+        "has_entry": True,
+        "organization": org.name,
+        "last_entry_date": last.entry_date.isoformat(),
+        "last_entry_label": f"{last.entry_date:%b} {last.entry_date.day}, {last.entry_date.year}",
+        "clusters": [c.id for c in last.clusters if c.is_active],
+        "opportunity_types": [t.id for t in last.opportunity_types if t.is_active],
+        "contact": {
+            "name": contact.name, "title": contact.title or "", "email": contact.email or "",
+            "phone": contact.phone or "",
+        } if contact else None,
+        "college_area": last.college_area or "",
+        "link_url": last.link_url or "",
+    }
 
 
 @bp.route("/new", methods=["GET", "POST"])
@@ -392,3 +434,53 @@ def _flash_refused(refused):
             "These files weren't attached because their type isn't allowed: " + ", ".join(refused),
             "error",
         )
+
+
+# --- Saved filters ----------------------------------------------------------
+
+FILTER_KEYS = {"q", "cluster", "type", "from", "to", "range", "status", "priority", "mine", "sort"}
+
+
+def clean_query(query):
+    """Keep only knowledge base filter parameters (no page number, nothing else)."""
+    pairs = [(k, v) for k, v in parse_qsl(query or "", keep_blank_values=False) if k in FILTER_KEYS and v]
+    return urlencode(pairs[:100])
+
+
+@bp.route("/saved-filters", methods=["POST"])
+@login_required
+def save_filter():
+    if not ConfirmForm().validate_on_submit():
+        abort(400)
+    name = " ".join((request.form.get("name") or "").split())[:100]
+    query = clean_query(request.form.get("query", ""))
+    if not name:
+        flash("Give the saved filter a name.", "error")
+    elif not query:
+        flash("Choose some filters before saving.", "error")
+    else:
+        existing = db.session.scalar(
+            select(SavedFilter).where(SavedFilter.user_id == current_user.id, func.lower(SavedFilter.name) == name.lower())
+        )
+        saved = existing or SavedFilter(user_id=current_user.id)
+        saved.name = name
+        saved.query = query
+        saved.is_shared = request.form.get("shared") == "1"
+        if existing is None:
+            db.session.add(saved)
+        db.session.commit()
+        flash(f"Saved filter \u201c{name}\u201d{' (updated)' if existing else ''}.", "success")
+    return redirect(url_for("entries.index") + (f"?{query}" if query else ""))
+
+
+@bp.route("/saved-filters/<int:filter_id>/delete", methods=["POST"])
+@login_required
+def delete_filter(filter_id):
+    saved = db.session.get(SavedFilter, filter_id) or abort(404)
+    if saved.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    if ConfirmForm().validate_on_submit():
+        db.session.delete(saved)
+        db.session.commit()
+        flash(f"Deleted saved filter \u201c{saved.name}\u201d.", "success")
+    return redirect(url_for("entries.index"))
