@@ -20,15 +20,18 @@ from sqlalchemy import and_, exists, func, or_, select
 from werkzeug.utils import secure_filename
 
 from ..extensions import db
-from ..forms import PRIORITY_CHOICES, STATUS_CHOICES, ConfirmForm, EntryForm
+from ..forms import ConfirmForm, EntryForm
 from ..models import (
     Attachment,
     Cluster,
     Contact,
     Entry,
+    FollowUpStatus,
     OpportunityType,
     Organization,
+    Priority,
     SavedFilter,
+    default_choice,
     entry_clusters,
     entry_opportunity_types,
 )
@@ -66,6 +69,12 @@ def _prepare_form(form, entry=None):
     form.opportunity_types.choices = _lookup_choices(
         OpportunityType, [t.id for t in entry.opportunity_types] if entry else ()
     )
+    form.priority_id.choices = _lookup_choices(Priority, [entry.priority_id] if entry else ())
+    form.status_id.choices = _lookup_choices(FollowUpStatus, [entry.status_id] if entry else ())
+    if entry is None and request.method == "GET":
+        for fld, model in ((form.priority_id, Priority), (form.status_id, FollowUpStatus)):
+            default = default_choice(model)
+            fld.data = default.id if default else None
 
 
 def _organization_names():
@@ -143,8 +152,8 @@ def _apply_form(form, entry):
         entry.next_step = (form.next_step.data or "").strip() or None
         entry.college_area = (form.college_area.data or "").strip() or None
         entry.link_url = (form.link_url.data or "").strip() or None
-        entry.priority = form.priority.data
-        entry.follow_up_status = form.follow_up_status.data
+        entry.priority_id = form.priority_id.data
+        entry.status_id = form.status_id.data
         entry.follow_up_date = form.follow_up_date.data
         entry.clusters = clusters
         entry.opportunity_types = types
@@ -206,9 +215,9 @@ def build_filters(args):
     if args["date_to"]:
         conds.append(Entry.entry_date <= args["date_to"])
     if args["status"]:
-        conds.append(Entry.follow_up_status.in_(args["status"]))
+        conds.append(Entry.status_id.in_(args["status"]))
     if args["priority"]:
-        conds.append(Entry.priority.in_(args["priority"]))
+        conds.append(Entry.priority_id.in_(args["priority"]))
     if args["mine"]:
         conds.append(Entry.created_by_id == current_user.id)
     return conds
@@ -220,8 +229,6 @@ def read_filter_args():
     date_to = _parse_date(request.args.get("to"))
     if preset in DATE_PRESETS and not (date_from or date_to):
         date_from = date.today() - timedelta(days=int(preset))
-    valid_status = {k for k, _ in STATUS_CHOICES}
-    valid_priority = {k for k, _ in PRIORITY_CHOICES}
     return {
         "q": request.args.get("q", ""),
         "clusters": _int_list("cluster"),
@@ -229,8 +236,8 @@ def read_filter_args():
         "date_from": date_from,
         "date_to": date_to,
         "range": preset if preset in DATE_PRESETS else "",
-        "status": [s for s in request.args.getlist("status") if s in valid_status],
-        "priority": [p for p in request.args.getlist("priority") if p in valid_priority],
+        "status": _int_list("status"),
+        "priority": _int_list("priority"),
         "mine": request.args.get("mine") == "1",
         "sort": request.args.get("sort", "date"),
     }
@@ -254,6 +261,8 @@ def index():
     page = db.paginate(query, per_page=PER_PAGE, error_out=False)
     all_clusters = db.session.scalars(select(Cluster).order_by(Cluster.sort_order, Cluster.name)).all()
     all_types = db.session.scalars(select(OpportunityType).order_by(OpportunityType.sort_order, OpportunityType.name)).all()
+    statuses = _lookup_choices(FollowUpStatus, args["status"])
+    priorities = _lookup_choices(Priority, args["priority"])
     filtered = any([args["q"], args["clusters"], args["types"], args["date_from"], args["date_to"],
                     args["status"], args["priority"], args["mine"]])
     saved = db.session.scalars(
@@ -265,7 +274,7 @@ def index():
         "entries/list.html", page=page, args=args, clusters=all_clusters, types=all_types,
         saved_filters=saved, current_query=clean_query(request.query_string.decode()),
         confirm_form=ConfirmForm(),
-        statuses=STATUS_CHOICES, priorities=PRIORITY_CHOICES, presets=DATE_PRESETS, filtered=filtered,
+        statuses=statuses, priorities=priorities, presets=DATE_PRESETS, filtered=filtered,
     )
 
 
@@ -332,7 +341,7 @@ def new():
 def detail(entry_id):
     entry = db.session.get(Entry, entry_id) or abort(404)
     return render_template("entries/detail.html", entry=entry, can_edit=can_edit(entry),
-                           confirm_form=ConfirmForm(), statuses=dict(STATUS_CHOICES))
+                           confirm_form=ConfirmForm(), statuses=_lookup_choices(FollowUpStatus, [entry.status_id]))
 
 
 @bp.route("/<int:entry_id>/edit", methods=["GET", "POST"])
@@ -371,9 +380,13 @@ def set_status(entry_id):
     """Quick status change from the detail page. Anyone signed in can do this,
     so whoever follows up can mark it done."""
     entry = db.session.get(Entry, entry_id) or abort(404)
-    status = request.form.get("status")
-    if ConfirmForm().validate_on_submit() and status in dict(STATUS_CHOICES):
-        entry.follow_up_status = status
+    try:
+        status_id = int(request.form.get("status", ""))
+    except ValueError:
+        status_id = None
+    allowed = {i for i, _ in _lookup_choices(FollowUpStatus, [entry.status_id])}
+    if ConfirmForm().validate_on_submit() and status_id in allowed:
+        entry.status_id = status_id
         db.session.commit()
         flash("Follow-up status updated.", "success")
     return redirect(url_for("entries.detail", entry_id=entry.id))

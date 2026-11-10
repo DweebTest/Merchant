@@ -12,11 +12,8 @@ from sqlalchemy import and_, exists, select
 from sqlalchemy.orm import selectinload
 
 from ..extensions import db
-from ..models import Cluster, Entry, OpportunityType, entry_clusters, entry_opportunity_types
+from ..models import Cluster, Entry, FollowUpStatus, OpportunityType, entry_clusters, entry_opportunity_types
 
-STATUS_LABELS = {"open": "Open", "in_progress": "In progress", "done": "Done", "no_action": "No action"}
-PRIORITY_LABELS = {"high": "High", "normal": "Normal", "low": "Low"}
-OPEN_STATUSES = ("open", "in_progress")
 
 
 @dataclass
@@ -159,7 +156,7 @@ def recent_report(date_from, date_to, cluster_ids):
         ("Entries", len(entries)),
         ("Organizations", len({e.organization_id for e in entries})),
         ("Contributors", len({e.created_by_id for e in entries})),
-        ("Open follow-ups", sum(e.follow_up_status in OPEN_STATUSES for e in entries)),
+        ("Open follow-ups", sum(e.status.is_open for e in entries)),
     ]
 
     by_cluster = Counter(c.name for e in entries for c in e.clusters)
@@ -181,7 +178,7 @@ def recent_report(date_from, date_to, cluster_ids):
             _names(e.clusters) + "\n" + _names(e.opportunity_types),
             _short(e.description, 400),
             _short(e.next_step, 200),
-            STATUS_LABELS.get(e.follow_up_status, e.follow_up_status),
+            e.status.name,
         ] for e in entries],
         widths=[1.1, 1.6, 1.8, 3.6, 2.2, 0.9],
     ))
@@ -274,7 +271,7 @@ def funding_report(date_from, date_to, cluster_ids):
     )
     report = Report("funding", SPECS["funding"].title, _period_text(date_from, date_to), _filters_text(cluster_ids))
     by_type = Counter(t.name for e in entries for t in e.opportunity_types if t.report_group == "funding")
-    open_entries = [e for e in entries if e.follow_up_status in OPEN_STATUSES]
+    open_entries = [e for e in entries if e.status.is_open]
     report.summary = [("Funding leads", len(entries)), ("Still open", len(open_entries))] + list(by_type.most_common())
 
     def rows(items):
@@ -285,20 +282,20 @@ def funding_report(date_from, date_to, cluster_ids):
             _short(e.description, 350),
             _short(e.next_step, 200),
             _contact_text(e),
-            f"{STATUS_LABELS.get(e.follow_up_status)}\n{PRIORITY_LABELS.get(e.priority)} priority"
+            f"{e.status.name}\n{e.priority.name} priority"
             + (f"\nby {_fmt(e.follow_up_date)}" if e.follow_up_date else ""),
         ] for e in items]
 
     columns = ["Date", "Organization", "Type", "Description", "Next step", "Contact", "Follow-up"]
     widths = [1.1, 1.6, 1.3, 3.2, 2.0, 1.6, 1.2]
-    priority_order = {"high": 0, "normal": 1, "low": 2}
-    open_entries.sort(key=lambda e: (priority_order.get(e.priority, 1), e.follow_up_date or date.max))
+    # The priority list's order: whatever is first is most urgent.
+    open_entries.sort(key=lambda e: (not e.priority.is_high, e.priority.sort_order, e.follow_up_date or date.max))
     report.sections.append(Section(
         "Open funding leads", columns, rows(open_entries), widths=widths,
         intro="High priority first, then by follow-up date.",
         empty_text="No open funding leads in this period.",
     ))
-    closed = [e for e in entries if e.follow_up_status not in OPEN_STATUSES]
+    closed = [e for e in entries if not e.status.is_open]
     if closed:
         report.sections.append(Section("Closed or no action needed", columns, rows(closed), widths=widths))
     return report
@@ -317,7 +314,7 @@ def partnership_report(date_from, date_to, cluster_ids):
     report.summary = [
         ("Partnership leads", len(entries)),
         ("Organizations", len(by_org)),
-        ("Still open", sum(e.follow_up_status in OPEN_STATUSES for e in entries)),
+        ("Still open", sum(e.status.is_open for e in entries)),
     ]
 
     org_rows = []
@@ -325,7 +322,7 @@ def partnership_report(date_from, date_to, cluster_ids):
         latest = max(items, key=lambda e: (e.entry_date, e.id))
         clusters = sorted({c.name for e in items for c in e.clusters})
         contacts = sorted({e.contact.name for e in items if e.contact})
-        open_count = sum(e.follow_up_status in OPEN_STATUSES for e in items)
+        open_count = sum(e.status.is_open for e in items)
         org_rows.append([
             name, len(items), _fmt(latest.entry_date), ", ".join(clusters), ", ".join(contacts),
             _short(latest.next_step, 220), f"{open_count} open" if open_count else "None open",
@@ -343,7 +340,7 @@ def partnership_report(date_from, date_to, cluster_ids):
         [[
             _fmt(e.entry_date), e.organization.name, _grouped_type_names(e, "partnership"),
             _short(e.description, 350), _short(e.next_step, 200),
-            STATUS_LABELS.get(e.follow_up_status),
+            e.status.name,
         ] for e in sorted(entries, key=lambda e: (e.organization.name.lower(), e.entry_date))],
         widths=[1.1, 1.7, 1.5, 3.6, 2.2, 1.0],
         empty_text="No partnership leads in this period.",
@@ -355,13 +352,13 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
     today = today or date.today()
     soon = today + timedelta(days=14)
     entries = _entries(
-        Entry.follow_up_status.in_(OPEN_STATUSES),
+        Entry.status.has(FollowUpStatus.is_open.is_(True)),
         *_cluster_filter(cluster_ids),
         order=(Entry.follow_up_date.is_(None), Entry.follow_up_date, Entry.entry_date.desc()),
     )
     overdue = [e for e in entries if e.follow_up_date and e.follow_up_date < today]
     due_soon = [e for e in entries if e.follow_up_date and today <= e.follow_up_date <= soon]
-    high_other = [e for e in entries if e.priority == "high" and not (e.follow_up_date and e.follow_up_date <= soon)]
+    high_other = [e for e in entries if e.priority.is_high and not (e.follow_up_date and e.follow_up_date <= soon)]
 
     report = Report("followups", SPECS["followups"].title, f"As of {_fmt(today)}", _filters_text(cluster_ids))
     report.summary = [
@@ -377,8 +374,8 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
             e.organization.name,
             _short(e.next_step, 260) or _short(e.description, 200),
             _names(e.opportunity_types),
-            PRIORITY_LABELS.get(e.priority),
-            STATUS_LABELS.get(e.follow_up_status),
+            e.priority.name,
+            e.status.name,
             e.created_by.display_name,
         ] for e in items]
 

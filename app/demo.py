@@ -13,7 +13,8 @@ import click
 from sqlalchemy import func, select
 
 from .extensions import db
-from .models import Attachment, Cluster, Contact, Entry, Group, OpportunityType, Organization, User
+from .models import (Attachment, Cluster, Contact, Entry, FollowUpStatus, Group, OpportunityType, Organization,
+                     Priority, User)
 
 DEMO_PASSWORD = "Demo-pass-2026"
 DEMO_EMAIL_DOMAIN = "demo.example.com"
@@ -202,6 +203,14 @@ def load_demo(entries=120, seed=2026, today=None):
 
     names = list(ORGS)
     weights = [ORGS[n][3] for n in names]
+    # Use whatever statuses and priorities the lists hold now, by what they mean.
+    statuses = db.session.scalars(select(FollowUpStatus).where(FollowUpStatus.is_active.is_(True))
+                                  .order_by(FollowUpStatus.sort_order)).all()
+    open_statuses = [s for s in statuses if s.is_open] or statuses
+    closed_statuses = [s for s in statuses if not s.is_open] or statuses
+    priorities = db.session.scalars(select(Priority).where(Priority.is_active.is_(True))
+                                    .order_by(Priority.sort_order)).all()
+    priority_weights = [2 if p.is_high else 5 if p.is_default else 2 for p in priorities]
     for _ in range(entries):
         org_name = rng.choices(names, weights)[0]
         org, org_clusters, people = orgs[org_name]
@@ -220,13 +229,11 @@ def load_demo(entries=120, seed=2026, today=None):
         next_step = rng.choice(steps) or None
 
         # Older items are mostly closed; recent ones mostly open.
-        if days_ago > 120:
-            status = rng.choices(["done", "no_action", "open", "in_progress"], [8, 3, 1, 1])[0]
-        else:
-            status = rng.choices(["open", "in_progress", "done", "no_action"], [5, 3, 2, 1])[0]
-        priority = rng.choices(["high", "normal", "low"], [2, 5, 2])[0]
+        closed_odds = 0.85 if days_ago > 120 else 0.27
+        status = rng.choice(closed_statuses if rng.random() < closed_odds else open_statuses)
+        priority = rng.choices(priorities, priority_weights)[0]
         follow_up = None
-        if status in ("open", "in_progress") and rng.random() < 0.7:
+        if status.is_open and rng.random() < 0.7:
             if days_ago > 45:
                 # Long-running items: a follow-up around now, a few overdue.
                 follow_up = today + timedelta(days=rng.randint(-14, 30))
@@ -243,7 +250,7 @@ def load_demo(entries=120, seed=2026, today=None):
             college_area=rng.choice([None, None, "Business", "Health Sciences", "Trades & Technology",
                                      "Continuing Education"]),
             link_url=ORGS[org_name][1] or None,
-            follow_up_status=status,
+            status=status,
             priority=priority,
             follow_up_date=follow_up,
             created_by=rng.choice(users),

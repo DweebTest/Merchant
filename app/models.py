@@ -11,6 +11,7 @@ import secrets
 from datetime import datetime, timezone
 
 from flask_login import UserMixin
+from sqlalchemy import event, select
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db
@@ -163,6 +164,35 @@ class OpportunityType(LookupMixin, db.Model):
     report_group = db.Column(db.String(20), index=True)
 
 
+class Priority(LookupMixin, db.Model):
+    """How urgent an entry is. Higher up the list (lower sort order) is more urgent."""
+    __tablename__ = "priorities"
+
+    # Counts as "high priority" on the home page and in the priority follow-ups report.
+    is_high = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    # Picked for new entries.
+    is_default = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+
+
+class FollowUpStatus(LookupMixin, db.Model):
+    """Where an entry's follow-up stands."""
+    __tablename__ = "follow_up_statuses"
+
+    COLOURS = {"amber": "Amber", "blue": "Blue", "green": "Green", "grey": "Grey"}
+
+    # Still needs someone to act: counts as an open follow-up.
+    is_open = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
+    is_default = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    colour = db.Column(db.String(10), nullable=False, default="grey", server_default="grey")
+
+
+def default_choice(model):
+    """The value new entries start with: the one marked default, else the first active one."""
+    return (db.session.scalar(select(model).where(model.is_default.is_(True), model.is_active.is_(True)))
+            or db.session.scalar(select(model).where(model.is_active.is_(True))
+                                 .order_by(model.sort_order, model.name).limit(1)))
+
+
 # --- Knowledge base ---------------------------------------------------------
 
 class Organization(db.Model):
@@ -199,9 +229,6 @@ class Contact(db.Model):
 class Entry(db.Model):
     __tablename__ = "entries"
 
-    STATUSES = ("open", "in_progress", "done", "no_action")
-    PRIORITIES = ("low", "normal", "high")
-
     id = db.Column(db.Integer, primary_key=True)
     entry_date = db.Column(db.Date, nullable=False, index=True)
     description = db.Column(db.Text, nullable=False)
@@ -210,8 +237,8 @@ class Entry(db.Model):
     next_step = db.Column(db.Text)
     college_area = db.Column(db.String(150))  # optional, free text
     link_url = db.Column(db.String(1000))
-    follow_up_status = db.Column(db.String(20), nullable=False, default="open", index=True)
-    priority = db.Column(db.String(10), nullable=False, default="normal", index=True)
+    status_id = db.Column(db.Integer, db.ForeignKey("follow_up_statuses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    priority_id = db.Column(db.Integer, db.ForeignKey("priorities.id", ondelete="RESTRICT"), nullable=False, index=True)
     follow_up_date = db.Column(db.Date, index=True)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
@@ -225,6 +252,8 @@ class Entry(db.Model):
     clusters = db.relationship("Cluster", secondary=entry_clusters, order_by="Cluster.sort_order")
     opportunity_types = db.relationship("OpportunityType", secondary=entry_opportunity_types, order_by="OpportunityType.sort_order")
     attachments = db.relationship("Attachment", back_populates="entry", cascade="all, delete-orphan")
+    status = db.relationship("FollowUpStatus", lazy="joined")
+    priority = db.relationship("Priority", lazy="joined")
 
     __table_args__ = (
         # Keyword search across the text fields (MySQL FULLTEXT; ignored elsewhere).
@@ -262,3 +291,21 @@ class SavedFilter(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     user = db.relationship("User")
+
+
+@event.listens_for(Entry, "before_insert")
+def _entry_defaults(mapper, connection, entry):
+    """Fill in the default status and priority when none was chosen."""
+    for col, model in (("status_id", FollowUpStatus), ("priority_id", Priority)):
+        if getattr(entry, col) is None:
+            rel = entry.status if col == "status_id" else entry.priority
+            if rel is not None:
+                setattr(entry, col, rel.id)
+                continue
+            t = model.__table__
+            row = connection.execute(
+                select(t.c.id).where(t.c.is_active.is_(True))
+                .order_by(t.c.is_default.desc(), t.c.sort_order, t.c.name).limit(1)
+            ).first()
+            if row:
+                setattr(entry, col, row[0])

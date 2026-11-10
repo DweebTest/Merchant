@@ -5,7 +5,7 @@ import click
 from sqlalchemy import select
 
 from .extensions import db
-from .models import Cluster, OpportunityType, User
+from .models import Cluster, FollowUpStatus, OpportunityType, Priority, User
 
 DEFAULT_CLUSTERS = [
     "Agriculture",
@@ -43,8 +43,24 @@ DEFAULT_REPORT_GROUPS = {
 }
 
 
+# name, flags. Order is the list order.
+DEFAULT_PRIORITIES = [
+    ("High", {"is_high": True}),
+    ("Normal", {"is_default": True}),
+    ("Low", {}),
+]
+DEFAULT_STATUSES = [
+    ("Open", {"is_open": True, "is_default": True, "colour": "amber"}),
+    ("In progress", {"is_open": True, "colour": "blue"}),
+    ("Done", {"is_open": False, "colour": "green"}),
+    ("No action needed", {"is_open": False, "colour": "grey"}),
+]
+
+
 def seed_lookups():
-    """Add the default clusters and opportunity types. Safe to run repeatedly."""
+    """Add the default lists. Safe to run repeatedly: existing values are left alone.
+    Priorities and statuses are only added to an empty list, so ones an
+    administrator deleted don't come back."""
     added = 0
     for model, names in ((Cluster, DEFAULT_CLUSTERS), (OpportunityType, DEFAULT_OPPORTUNITY_TYPES)):
         existing = set(db.session.scalars(select(model.name)))
@@ -55,6 +71,11 @@ def seed_lookups():
                     item.report_group = DEFAULT_REPORT_GROUPS.get(name)
                 db.session.add(item)
                 added += 1
+    for model, rows in ((Priority, DEFAULT_PRIORITIES), (FollowUpStatus, DEFAULT_STATUSES)):
+        if db.session.scalar(select(model.id).limit(1)) is None:
+            for order, (name, flags) in enumerate(rows, start=1):
+                db.session.add(model(name=name, sort_order=order * 10, **flags))
+                added += 1
     db.session.commit()
     return added
 
@@ -62,7 +83,7 @@ def seed_lookups():
 def register_cli(app):
     @app.cli.command("seed")
     def seed():
-        """Load the default clusters and opportunity types."""
+        """Load the default lists (clusters, opportunity types, priorities, statuses)."""
         added = seed_lookups()
         click.echo(f"Seed complete: {added} new lookup values.")
 

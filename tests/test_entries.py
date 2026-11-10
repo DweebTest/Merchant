@@ -5,13 +5,21 @@ from datetime import date, timedelta
 from sqlalchemy import select
 
 from app.extensions import db
-from app.models import Attachment, Cluster, Contact, Entry, OpportunityType, Organization
+from app.models import Attachment, Cluster, Contact, Entry, FollowUpStatus, OpportunityType, Organization, Priority
 
 from .conftest import login, make_user
 
 
 def ids(model, *names):
     return [str(i) for i in db.session.scalars(select(model.id).where(model.name.in_(names)))]
+
+
+def prio(name):
+    return ids(Priority, name)[0]
+
+
+def status(name):
+    return ids(FollowUpStatus, name)[0]
 
 
 def entry_data(**overrides):
@@ -22,8 +30,8 @@ def entry_data(**overrides):
         "clusters": ids(Cluster, "Trades"),
         "opportunity_types": ids(OpportunityType, "Workforce/training need", "Partnership opportunity"),
         "next_step": "Send a proposal for a 12-week cohort.",
-        "priority": "high",
-        "follow_up_status": "open",
+        "priority_id": prio("High"),
+        "status_id": status("Open"),
         "follow_up_date": "",
         "link_url": "",
     }
@@ -43,7 +51,7 @@ def test_create_entry_with_contact_and_new_org(admin_client, app):
     assert entry.contact.name == "Pat Lee" and entry.contact.organization_id == entry.organization_id
     assert [c.name for c in entry.clusters] == ["Trades"]
     assert len(entry.opportunity_types) == 2
-    assert entry.priority == "high"
+    assert entry.priority.name == "High" and entry.status.name == "Open"
 
     page = admin_client.get(f"/entries/{entry.id}")
     assert b"Acme Manufacturing" in page.data and b"pat@acme.example" in page.data
@@ -105,9 +113,9 @@ def test_only_creator_or_admin_can_edit(client, app):
     assert client.get(f"/entries/{entry.id}/edit").status_code == 403
     assert client.post(f"/entries/{entry.id}/delete").status_code == 403
     # ...but anyone can update the follow-up status.
-    client.post(f"/entries/{entry.id}/status", data={"status": "done"})
+    client.post(f"/entries/{entry.id}/status", data={"status": status("Done")})
     db.session.refresh(entry)
-    assert entry.follow_up_status == "done"
+    assert entry.status.name == "Done"
 
 
 def test_edit_entry(admin_client, app):
@@ -129,13 +137,13 @@ def test_edit_entry(admin_client, app):
 def _seed_search_data(client):
     add_entry(client, entry_date="2026-10-01", description="Wind farm expansion needs technicians",
               organization="Prairie Power", clusters=ids(Cluster, "Energy"),
-              opportunity_types=ids(OpportunityType, "Workforce/training need"), priority="normal")
+              opportunity_types=ids(OpportunityType, "Workforce/training need"), priority_id=prio("Normal"))
     add_entry(client, entry_date="2026-11-05", description="Foundation interested in nursing scholarships",
               organization="Health Trust", clusters=ids(Cluster, "Health Care"),
               opportunity_types=ids(OpportunityType, "Potential donor"), contact_name="Dana Wu")
     add_entry(client, entry_date="2026-11-07", description="Drone mapping research collaboration",
               organization="SkyTech", clusters=ids(Cluster, "Technology", "Agriculture"),
-              opportunity_types=ids(OpportunityType, "Applied research opportunity"), follow_up_status="done")
+              opportunity_types=ids(OpportunityType, "Applied research opportunity"), status_id=status("Done"))
 
 
 def _orgs(resp):
@@ -161,8 +169,8 @@ def test_search_and_filters(admin_client, app):
     assert _orgs(c.get(f"/entries/?type={donor}")) == ["Health Trust"]
 
     assert _orgs(c.get("/entries/?from=2026-11-01&to=2026-11-06")) == ["Health Trust"]
-    assert _orgs(c.get("/entries/?status=done")) == ["SkyTech"]
-    assert _orgs(c.get("/entries/?priority=high")) == ["Health Trust", "SkyTech"]
+    assert _orgs(c.get(f"/entries/?status={status('Done')}")) == ["SkyTech"]
+    assert _orgs(c.get(f"/entries/?priority={prio('High')}")) == ["Health Trust", "SkyTech"]
 
 
 def test_bad_filter_values_are_ignored(admin_client, app):

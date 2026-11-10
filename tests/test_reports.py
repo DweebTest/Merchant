@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 
 from app.extensions import db
-from app.models import Cluster, Entry, OpportunityType, Organization
+from app.models import Cluster, Entry, FollowUpStatus, OpportunityType, Organization, Priority
 from app.reports.data import build_report, followups_report
 from app.reports.pdf import render_pdf
 
@@ -20,7 +20,15 @@ def _type(name):
     return db.session.scalar(select(OpportunityType).where(OpportunityType.name == name))
 
 
+def _named(model, name):
+    return db.session.scalar(select(model).where(model.name == name))
+
+
 def _entry(user, org, days_ago, clusters, types, **kw):
+    if "priority" in kw:
+        kw["priority"] = _named(Priority, kw["priority"])
+    if "status" in kw:
+        kw["status"] = _named(FollowUpStatus, kw["status"])
     organization = db.session.scalar(select(Organization).where(Organization.name == org)) or Organization(name=org)
     e = Entry(
         entry_date=TODAY - timedelta(days=days_ago),
@@ -39,8 +47,8 @@ def _entry(user, org, days_ago, clusters, types, **kw):
 @pytest.fixture()
 def sample(app, admin):
     _entry(admin, "Prairie Wind", 5, ["Energy", "Trades"], ["Workforce/training need", "Partnership opportunity"],
-           priority="high", next_step="Meet Continuing Ed")
-    _entry(admin, "Prairie Wind", 12, ["Energy"], ["Partnership opportunity"], follow_up_status="done")
+           priority="High", next_step="Meet Continuing Ed")
+    _entry(admin, "Prairie Wind", 12, ["Energy"], ["Partnership opportunity"], status="Done")
     _entry(admin, "Health Trust", 8, ["Health Care"], ["Potential donor", "Grant opportunity"],
            follow_up_date=TODAY - timedelta(days=2))
     _entry(admin, "SkyMap", 20, ["Technology", "Agriculture"], ["Applied research opportunity"],

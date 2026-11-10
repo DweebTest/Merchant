@@ -1,12 +1,11 @@
-{% set STATUS_LABELS = {'open': 'Open', 'in_progress': 'In progress', 'done': 'Done', 'no_action': 'No action needed'} %}
-
 {% macro status_tag(status) -%}
-  <span class="tag status-{{ status }}">{{ STATUS_LABELS.get(status, status) }}</span>
+  <span class="tag colour-{{ status.colour }}">{{ status.name }}</span>
 {%- endmacro %}
 
+{#- The default priority isn't shown, to keep cards quiet. -#}
 {% macro priority_tag(priority) -%}
-  {% if priority == 'high' %}<span class="tag prio-high">High priority</span>
-  {% elif priority == 'low' %}<span class="tag off">Low priority</span>{% endif %}
+  {% if priority.is_high %}<span class="tag prio-high">{{ priority.name }} priority</span>
+  {% elif not priority.is_default %}<span class="tag off">{{ priority.name }} priority</span>{% endif %}
 {%- endmacro %}
 
 {% macro entry_card(e) %}
@@ -21,8 +20,8 @@
     {% for t in e.opportunity_types %}<span class="tag otype">{{ t.name }}</span>{% endfor %}
   </div>
   <div class="entry-meta muted">
-    {{ status_tag(e.follow_up_status) }} {{ priority_tag(e.priority) }}
-    {% if e.follow_up_date and e.follow_up_status in ('open', 'in_progress') %}
+    {{ status_tag(e.status) }} {{ priority_tag(e.priority) }}
+    {% if e.follow_up_date and e.status.is_open %}
       <span>Follow up by {{ e.follow_up_date | shortdate }}</span>
     {% endif %}
     {% if e.attachments %}<span>📎 {{ e.attachments | length }}</span>{% endif %}

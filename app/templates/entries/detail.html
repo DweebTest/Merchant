@@ -28,13 +28,13 @@
   <dl class="facts">
     <dt>Follow-up</dt>
     <dd>
-      {{ status_tag(entry.follow_up_status) }} {{ priority_tag(entry.priority) }}
+      {{ status_tag(entry.status) }} {{ priority_tag(entry.priority) }}
       {% if entry.follow_up_date %}by {{ entry.follow_up_date | longdate }}{% endif %}
       <form class="inline" method="post" action="{{ url_for('entries.set_status', entry_id=entry.id) }}">
         {{ confirm_form.hidden_tag() }}
         <select name="status" aria-label="Change status">
-          {% for value, label in statuses.items() %}
-          <option value="{{ value }}" {% if value == entry.follow_up_status %}selected{% endif %}>{{ label }}</option>
+          {% for value, label in statuses %}
+          <option value="{{ value }}" {% if value == entry.status_id %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
         <button type="submit">Update</button>

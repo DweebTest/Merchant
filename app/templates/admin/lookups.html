@@ -1,24 +1,45 @@
 {% extends "base.html" %}
+{% from "entries/_macros.html" import status_tag %}
 {% block title %}{{ spec.label }}{% endblock %}
 {% block content %}
+<p><a href="{{ url_for('admin.lists') }}">← All lists</a></p>
 <div class="head">
   <h1>{{ spec.label }}</h1>
   <a class="button primary" href="{{ url_for('admin.lookup_edit', kind=kind) }}">Add {{ spec.singular }}</a>
 </div>
-<p class="muted">Mark a value inactive to hide it from the entry form. Entries already tagged with it keep the tag.</p>
+<p class="muted">{{ spec.help }} Values nobody has used yet can be deleted. Untick <em>Active</em> to retire one
+  that's in use: it disappears from the entry form, and entries that already have it keep it.</p>
 <div class="table-wrap"><table>
-  <thead><tr><th>Name</th><th>Sort order</th><th>Used by</th>{% if kind == 'types' %}<th>Report</th>{% endif %}<th>Status</th></tr></thead>
+  <thead><tr><th>Name</th><th>Sort order</th><th>Used by</th>
+    {% if kind == 'types' %}<th>Report</th>{% endif %}
+    {% if kind == 'priorities' %}<th>High priority</th>{% endif %}
+    {% if kind == 'statuses' %}<th>Counts as open</th>{% endif %}
+    {% if spec.single %}<th>Default</th>{% endif %}
+    <th>Status</th><th></th></tr></thead>
   <tbody>
   {% for r in rows %}
+    {% set used = usage.get(r.id, 0) %}
     <tr>
-      <td><a href="{{ url_for('admin.lookup_edit', kind=kind, item_id=r.id) }}">{{ r.name }}</a></td>
+      <td><a href="{{ url_for('admin.lookup_edit', kind=kind, item_id=r.id) }}">{% if kind == 'statuses' %}{{ status_tag(r) }}{% else %}{{ r.name }}{% endif %}</a></td>
       <td>{{ r.sort_order }}</td>
-      <td>{{ usage.get(r.id, 0) }} entries</td>
+      <td>{{ used }} {{ 'entry' if used == 1 else 'entries' }}</td>
       {% if kind == 'types' %}<td>{{ {'funding': 'Funding', 'partnership': 'Partnership'}.get(r.report_group, '—') }}</td>{% endif %}
+      {% if kind == 'priorities' %}<td>{{ 'Yes' if r.is_high else '—' }}</td>{% endif %}
+      {% if kind == 'statuses' %}<td>{{ 'Yes' if r.is_open else 'No' }}</td>{% endif %}
+      {% if spec.single %}<td>{{ 'Default' if r.is_default else '' }}</td>{% endif %}
       <td>{% if r.is_active %}<span class="tag on">Active</span>{% else %}<span class="tag off">Inactive</span>{% endif %}</td>
+      <td class="right">
+        {% if not used and not r.is_default %}
+        <form method="post" action="{{ url_for('admin.lookup_delete', kind=kind, item_id=r.id) }}"
+              data-confirm="Delete {{ r.name }}?">
+          {{ confirm_form.hidden_tag() }}
+          <button class="link danger" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </td>
     </tr>
   {% else %}
-    <tr><td colspan="5">Nothing here yet. Run <code>flask seed</code> to load the defaults.</td></tr>
+    <tr><td colspan="8">Nothing here yet. Run <code>flask seed</code> to load the defaults.</td></tr>
   {% endfor %}
   </tbody>
 </table></div>

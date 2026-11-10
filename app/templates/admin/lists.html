@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "entries/_macros.html" import status_tag %}
+{% block title %}Lists{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Lists</h1>
+</div>
+<p class="muted">The choices people pick from on the entry form and in search. Only administrators see this page.</p>
+<div class="list-cards">
+  {% for o in overview %}
+  <section class="card list-card">
+    <div class="head">
+      <h2><a href="{{ url_for('admin.lookup_list', kind=o.kind) }}">{{ o.spec.label }}</a></h2>
+      <span class="muted">{{ o.active }} active</span>
+    </div>
+    <p class="muted">{{ o.spec.help }}</p>
+    <div class="tags">
+      {% for r in o.rows if r.is_active %}
+        {% if o.kind == 'statuses' %}{{ status_tag(r) }}{% else %}<span class="tag{% if o.kind == 'clusters' %} cluster{% elif o.kind == 'types' %} otype{% elif r.is_high %} prio-high{% endif %}">{{ r.name }}</span>{% endif %}
+      {% endfor %}
+    </div>
+    <p><a class="button" href="{{ url_for('admin.lookup_list', kind=o.kind) }}">Edit {{ o.spec.label | lower }}</a></p>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

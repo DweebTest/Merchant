@@ -154,10 +154,10 @@
 .theme-orbit .tag.cluster { color: var(--o-cyan); background: rgba(79, 209, 255, .07); }
 .theme-orbit .tag.otype { color: var(--o-violet); background: rgba(169, 139, 255, .08); }
 .theme-orbit .tag.prio-high { color: var(--o-pink); background: rgba(255, 107, 154, .08); }
-.theme-orbit .tag.on, .theme-orbit .tag.status-done { color: var(--o-green); background: rgba(95, 227, 161, .08); }
-.theme-orbit .tag.warn, .theme-orbit .tag.status-open { color: var(--o-amber); background: rgba(255, 200, 87, .08); }
-.theme-orbit .tag.status-in_progress { color: #7fb2ff; background: rgba(127, 178, 255, .08); }
-.theme-orbit .tag.off, .theme-orbit .tag.status-no_action { color: var(--muted); background: rgba(255, 255, 255, .03); }
+.theme-orbit .tag.on, .theme-orbit .tag.colour-green { color: var(--o-green); background: rgba(95, 227, 161, .08); }
+.theme-orbit .tag.warn, .theme-orbit .tag.colour-amber { color: var(--o-amber); background: rgba(255, 200, 87, .08); }
+.theme-orbit .tag.colour-blue { color: #7fb2ff; background: rgba(127, 178, 255, .08); }
+.theme-orbit .tag.off, .theme-orbit .tag.colour-grey { color: var(--muted); background: rgba(255, 255, 255, .03); }
 .theme-orbit .flash { border: 1px solid var(--o-line); border-left: 3px solid var(--o-cyan); border-radius: 0;
   background: rgba(13, 21, 39, .9); color: var(--text); }
 .theme-orbit .flash-success { border-left-color: var(--o-green); color: #c9f6dd; }

@@ -134,9 +134,24 @@ as a PDF, for any date range and set of clusters:
 * **Potential funding opportunities** and **Partnership leads**: entries whose
   opportunity types are marked for that report. By default donors, sponsors and
   grants count as funding, and partnership and applied research count as
-  partnership leads. Admins can change this on the Opportunity types page.
+  partnership leads. Admins can change this under **Lists → Opportunity types**.
 * **Priority follow-ups**: open follow-ups that are overdue, due within two
   weeks, or high priority.
+
+## Lists
+
+Administrators edit the choices people pick from under **Lists**: economic
+clusters, opportunity types, priorities and follow-up statuses. Each can be
+added, renamed, reordered (sort order) or retired. A value nobody has used
+can be deleted; one that's in use is retired instead, so old entries keep it.
+
+Priorities and statuses carry a meaning the app relies on:
+
+* A priority marked **Counts as high priority** shows on the home page and in
+  the Priority follow-ups report.
+* A status marked **Still needs follow-up** counts as an open follow-up.
+  Untick it for statuses like Done.
+* One of each is the **default** for new entries.
 
 PDFs are made with ReportLab, which is pure Python, so nothing extra needs
 installing on Windows or Linux.
