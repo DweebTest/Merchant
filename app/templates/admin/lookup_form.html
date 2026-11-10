@@ -10,6 +10,7 @@
     {{ field(form.name, autofocus=true) }}
     {{ field(form.sort_order) }}
     {{ field(form.is_active) }}
+    {% if kind == 'types' %}{{ field(form.report_group) }}{% endif %}
     <button class="primary" type="submit">Save</button>
   </form>
 </div>

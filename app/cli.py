@@ -32,6 +32,16 @@ DEFAULT_OPPORTUNITY_TYPES = [
     "Applied research opportunity",
 ]
 
+# Which opportunity types feed the funding and partnership reports by default.
+# Admins can change this on the Opportunity types page.
+DEFAULT_REPORT_GROUPS = {
+    "Potential donor": "funding",
+    "Potential sponsor": "funding",
+    "Grant opportunity": "funding",
+    "Partnership opportunity": "partnership",
+    "Applied research opportunity": "partnership",
+}
+
 
 def seed_lookups():
     """Add the default clusters and opportunity types. Safe to run repeatedly."""
@@ -40,7 +50,10 @@ def seed_lookups():
         existing = set(db.session.scalars(select(model.name)))
         for order, name in enumerate(names, start=1):
             if name not in existing:
-                db.session.add(model(name=name, sort_order=order * 10))
+                item = model(name=name, sort_order=order * 10)
+                if model is OpportunityType:
+                    item.report_group = DEFAULT_REPORT_GROUPS.get(name)
+                db.session.add(item)
                 added += 1
     db.session.commit()
     return added

@@ -14,6 +14,7 @@
       <a href="{{ url_for('main.index') }}">Home</a>
       <a href="{{ url_for('entries.index') }}">Knowledge base</a>
       <a href="{{ url_for('entries.new') }}">New entry</a>
+      <a href="{{ url_for('reports.index') }}">Reports</a>
       {% if current_user.is_admin %}
       <a href="{{ url_for('admin.users') }}">Users</a>
       <a href="{{ url_for('admin.groups') }}">Groups</a>

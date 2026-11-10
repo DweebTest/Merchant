@@ -7,17 +7,18 @@
 </div>
 <p class="muted">Mark a value inactive to hide it from the entry form. Entries already tagged with it keep the tag.</p>
 <div class="table-wrap"><table>
-  <thead><tr><th>Name</th><th>Sort order</th><th>Used by</th><th>Status</th></tr></thead>
+  <thead><tr><th>Name</th><th>Sort order</th><th>Used by</th>{% if kind == 'types' %}<th>Report</th>{% endif %}<th>Status</th></tr></thead>
   <tbody>
   {% for r in rows %}
     <tr>
       <td><a href="{{ url_for('admin.lookup_edit', kind=kind, item_id=r.id) }}">{{ r.name }}</a></td>
       <td>{{ r.sort_order }}</td>
       <td>{{ usage.get(r.id, 0) }} entries</td>
+      {% if kind == 'types' %}<td>{{ {'funding': 'Funding', 'partnership': 'Partnership'}.get(r.report_group, '—') }}</td>{% endif %}
       <td>{% if r.is_active %}<span class="tag on">Active</span>{% else %}<span class="tag off">Inactive</span>{% endif %}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4">Nothing here yet. Run <code>flask seed</code> to load the defaults.</td></tr>
+    <tr><td colspan="5">Nothing here yet. Run <code>flask seed</code> to load the defaults.</td></tr>
   {% endfor %}
   </tbody>
 </table></div>

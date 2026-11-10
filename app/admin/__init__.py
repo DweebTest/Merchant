@@ -202,6 +202,8 @@ def lookup_edit(kind, item_id=None):
     model = spec["model"]
     item = (db.session.get(model, item_id) or abort(404)) if item_id else None
     form = LookupForm(obj=item)
+    if item is not None and kind == "types" and not form.is_submitted():
+        form.report_group.data = item.report_group or ""
     if form.validate_on_submit():
         name = form.name.data.strip()
         q = select(model).where(model.name == name)
@@ -216,6 +218,8 @@ def lookup_edit(kind, item_id=None):
             item.name = name
             item.sort_order = form.sort_order.data or 0
             item.is_active = form.is_active.data
+            if kind == "types":
+                item.report_group = form.report_group.data or None
             db.session.commit()
             flash(f"Saved {item.name}.", "success")
             return redirect(url_for("admin.lookup_list", kind=kind))

@@ -31,10 +31,12 @@ def create_app(config_class=None):
     from .auth import bp as auth_bp
     from .entries import bp as entries_bp
     from .main import bp as main_bp
+    from .reports import bp as reports_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(entries_bp, url_prefix="/entries")
+    app.register_blueprint(reports_bp, url_prefix="/reports")
     app.register_blueprint(main_bp)
 
     @app.errorhandler(403)
