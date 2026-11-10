@@ -19,6 +19,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func, select
 
 from ..extensions import db
+from ..urls import safe_next
 from ..models import User, utcnow
 
 RELAY_MAX_AGE = 10 * 60   # seconds a person has to finish signing in
@@ -111,13 +112,6 @@ def _relay_serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="merchant-saml-relay")
 
 
-def _safe_next(target):
-    if not target:
-        return None
-    parts = urlsplit(target)
-    if parts.scheme or parts.netloc or not target.startswith("/") or target.startswith("//"):
-        return None
-    return target
 
 
 # --- Views --------------------------------------------------------------------
@@ -143,7 +137,7 @@ def start_login():
     from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
     authn = OneLogin_Saml2_Authn_Request(auth.get_settings())
-    relay = _relay_serializer().dumps({"rid": authn.get_id(), "next": _safe_next(request.args.get("next"))})
+    relay = _relay_serializer().dumps({"rid": authn.get_id(), "next": safe_next(request.args.get("next"))})
     params = {"SAMLRequest": authn.get_request(), "RelayState": relay}
     return redirect(OneLogin_Saml2_Utils.redirect(auth.get_sso_url(), params, True))
 

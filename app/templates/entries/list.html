@@ -21,7 +21,7 @@
     {% if f.is_shared %}<span class="shared-mark" aria-label="Shared">👥</span>{% endif %}
     {% if f.user_id == current_user.id or current_user.is_admin %}
     <form method="post" action="{{ url_for('entries.delete_filter', filter_id=f.id) }}"
-          onsubmit="return confirm('Delete this saved filter?');">
+          data-confirm="Delete this saved filter?">
       {{ confirm_form.hidden_tag() }}
       <button class="link chip-x" type="submit" aria-label="Delete saved filter">×</button>
     </form>
@@ -94,12 +94,6 @@
     </div>
   </form>
   </details>
-  <script>
-    // On phones, start with the filters folded so results show first.
-    if (window.matchMedia("(max-width: 760px)").matches) {
-      document.getElementById("filter-panel").removeAttribute("open");
-    }
-  </script>
 
   <section class="results">
     {% if filtered %}

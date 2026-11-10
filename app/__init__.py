@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from flask_login import current_user
@@ -30,7 +31,15 @@ def create_app(config_class=None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(models.User, int(user_id))
+        # The id is "<user id>:<session token>". A changed token (password
+        # change, deactivation...) or a deactivated account ends the session.
+        uid, _, token = str(user_id).partition(":")
+        if not uid.isdigit() or not token:
+            return None
+        user = db.session.get(models.User, int(uid))
+        if user is None or not user.is_active or not secrets.compare_digest(user.session_token, token):
+            return None
+        return user
 
     from .admin import bp as admin_bp
     from .auth import bp as auth_bp
@@ -66,11 +75,34 @@ def create_app(config_class=None):
         ):
             return redirect(url_for("auth.change_password"))
 
+    csp = "; ".join([
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",   # report bar widths use style attributes
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ])
+
     @app.after_request
     def security_headers(response):
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "same-origin")
+        h = response.headers
+        h.setdefault("X-Content-Type-Options", "nosniff")
+        h.setdefault("X-Frame-Options", "DENY")
+        h.setdefault("Referrer-Policy", "same-origin")
+        h.setdefault("Content-Security-Policy", csp)
+        h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        h.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if app.config["SESSION_COOKIE_SECURE"]:
+            # Only once the site is on HTTPS: browsers then refuse plain HTTP for a year.
+            h.setdefault("Strict-Transport-Security", "max-age=31536000")
+        if request.endpoint != "static" and current_user.is_authenticated:
+            # Don't leave knowledge base pages in shared computers' caches.
+            h["Cache-Control"] = "no-store"
         return response
 
     # Portable date formats (strftime's %-d doesn't work on Windows).

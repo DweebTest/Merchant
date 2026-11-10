@@ -115,6 +115,9 @@ def user_edit(user_id):
         elif needs_password:
             form.password.errors.append("Set a temporary password to switch this person to password sign-in.")
         else:
+            if (email != user.email or form.auth_provider.data != user.auth_provider
+                    or (user.is_active_flag and not form.is_active.data)):
+                user.end_sessions()  # sign them out everywhere so the change takes effect now
             if email != user.email:
                 # A new email means a different person may sign in; relink at their next single sign-on.
                 user.external_id = None

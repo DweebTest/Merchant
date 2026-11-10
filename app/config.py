@@ -5,6 +5,7 @@ code runs with the database on this machine or on a separate server. To move
 MySQL to another host, change DB_HOST (or DATABASE_URL); nothing else changes.
 """
 import os
+from datetime import timedelta
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
@@ -61,6 +62,9 @@ class Config:
     SESSION_COOKIE_SECURE = _bool("SESSION_COOKIE_SECURE", False)
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
     REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    # "Keep me signed in" lasts this many days.
+    REMEMBER_COOKIE_DURATION = timedelta(days=int(os.environ.get("REMEMBER_DAYS", "14")))
 
     # Email-and-password sign-in. Turn off once everyone uses Microsoft sign-in.
     LOCAL_LOGIN_ENABLED = _bool("LOCAL_LOGIN_ENABLED", True)

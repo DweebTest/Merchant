@@ -38,6 +38,11 @@ paid from those credits. IAM Identity Center has no charge of its own. The
 3. Search for **Billing and Cost Management → Budgets → Create budget**, choose
    the **Monthly cost budget** template, set **US$10**, and enter your email.
    AWS will email you if spending heads past that.
+4. Don't use the root user day to day. Once Identity Center is on (step 6),
+   give yourself an administrator permission set and sign in through the
+   access portal instead. Keep the root password and MFA somewhere safe.
+5. **EC2 → Settings → EBS encryption → Manage → Enable**, so every disk you
+   create from now on is encrypted. It's free.
 
 ## 2. Security groups (firewall rules)
 
@@ -66,7 +71,8 @@ reach MySQL and the attachments share.
 | Instance type | one marked **Free tier eligible**, e.g. `t3.micro` or `t3.small` | same |
 | Key pair | *Proceed without a key pair* (you'll use Connect) | same |
 | Network settings → Select existing security group | `merchant-db` | `merchant-app` |
-| Storage | 8 GB gp3 (default) | same |
+| Storage | 8 GB gp3 (default), **Encrypted** (on by default after step 1.5) | same |
+| Advanced details → Metadata version | **V2 only (token required)** | same |
 
 When they're running, click each one and note its **Private IPv4 address**
 (it starts with 172.31). You'll need both.
@@ -121,6 +127,12 @@ python3 -c "import secrets; print(secrets.token_hex(32))"   # copy the output
 nano .env
 ```
 
+Only you should be able to read this file, since it holds the passwords:
+
+```sh
+chmod 600 .env
+```
+
 Fill in or change these lines (Ctrl+O, Enter to save, then Ctrl+X to exit):
 
 ```ini
@@ -134,6 +146,10 @@ SAML_SP_BASE_URL=https://HOST
 ```
 
 Leave `MYSQL_ROOT_PASSWORD` empty, because the database lives on db01.
+
+**Never run `flask demo-data load` on a cloud server.** The demo accounts share a
+published password. If you load demo data to try things out, run
+`flask demo-data clear` before anyone real uses the site.
 
 Start it and create your admin account. Use **the email address you'll use
 for AWS sign-in**:
@@ -223,9 +239,17 @@ tile in your AWS access portal.
 
 * **Update Merchant:** `cd ~/Merchant && git pull && docker compose -f docker-compose.aws.yml up -d --build`
 * **Logs:** `docker compose -f docker-compose.aws.yml logs -f app`
-* **Backups:** db01 writes one each night to `/srv/backups`. Copy them off
-  the server now and then (for example to S3), because they vanish with the
-  instance.
+* **Backups:** db01 writes one each night to `/srv/backups`. They live on
+  the same disk and vanish with the instance, so also protect the disk itself:
+  **EC2 → Lifecycle Manager → Create lifecycle policy**, target instances
+  tagged `Name = merchant-db01`, daily, keep 7. Snapshots of an encrypted disk
+  are encrypted too.
+* **Updates:** Ubuntu installs security updates automatically every day.
+  Reboot now and then (`sudo reboot`) when the login message says one is needed.
+* **Closing SSH (optional):** once everything works you can delete the SSH 22
+  rules from both security groups and use **Connect → Session Manager**
+  instead. That needs the instance role `AmazonSSMManagedInstanceCore`
+  (**Actions → Security → Modify IAM role**).
 * **Reset an admin password:** `docker compose -f docker-compose.aws.yml exec app flask create-admin`
 
 ## Troubleshooting

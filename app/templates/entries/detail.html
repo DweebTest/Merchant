@@ -64,7 +64,7 @@
 
   {% if can_edit %}
   <form method="post" action="{{ url_for('entries.delete', entry_id=entry.id) }}"
-        onsubmit="return confirm('Delete this entry and its attachments? This cannot be undone.');">
+        data-confirm="Delete this entry and its attachments? This cannot be undone.">
     {{ confirm_form.hidden_tag() }}
     <button class="link danger" type="submit">Delete entry</button>
   </form>

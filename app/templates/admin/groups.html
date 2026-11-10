@@ -17,7 +17,7 @@
       <td>{{ g.members | length }}</td>
       <td class="right">
         <form method="post" action="{{ url_for('admin.group_delete', group_id=g.id) }}"
-              onsubmit="return confirm('Delete this group? Members keep their accounts.');">
+              data-confirm="Delete this group? Members keep their accounts.">
           {{ delete_form.hidden_tag() }}
           <button class="link danger" type="submit">Delete</button>
         </form>

@@ -7,6 +7,7 @@ than reshaping the database:
 * clusters, opportunity_types: admin-editable lookup lists
 * organizations, contacts, entries, attachments: the knowledge base itself
 """
+import secrets
 from datetime import datetime, timezone
 
 from flask_login import UserMixin
@@ -63,6 +64,9 @@ class User(UserMixin, db.Model):
     # SAML NameID from the identity provider (e.g. AWS IAM Identity Center), set at first SAML sign-in.
     saml_name_id = db.Column(db.String(255), unique=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    # Part of the sign-in cookie. Changing it signs the person out everywhere
+    # (done on password change, deactivation, email or sign-in method change).
+    session_token = db.Column(db.String(32), nullable=False, default=lambda: secrets.token_hex(16))
     is_active_flag = db.Column("is_active", db.Boolean, nullable=False, default=True)
     must_change_password = db.Column(db.Boolean, nullable=False, default=False)
     failed_login_count = db.Column(db.Integer, nullable=False, default=0)
@@ -79,8 +83,17 @@ class User(UserMixin, db.Model):
     def is_active(self):
         return bool(self.is_active_flag)
 
+    def get_id(self):
+        # Flask-Login stores this in the session and "keep me signed in" cookie.
+        return f"{self.id}:{self.session_token}"
+
+    def end_sessions(self):
+        """Sign this person out of every browser and device."""
+        self.session_token = secrets.token_hex(16)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
+        self.end_sessions()
 
     def check_password(self, password):
         return bool(self.password_hash) and check_password_hash(self.password_hash, password)

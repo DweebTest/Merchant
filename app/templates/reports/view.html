@@ -13,15 +13,15 @@
 <form class="report-filters" method="get">
   {% if spec.uses_period %}
   <label class="small">Period
-    <select name="range" onchange="this.form.from.value=''; this.form.to.value='';">
+    <select name="range" data-clears="from to">
       <option value="">Custom dates</option>
       {% for k, label in presets.items() %}
       <option value="{{ k }}" {% if request.args.get('range') == k or (not request.args.get('range') and not request.args.get('from') and k|int == spec.default_days) %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </label>
-  <label class="small">From <input type="date" name="from" value="{{ request.args.get('from', '') }}" onchange="this.form.range.value='';"></label>
-  <label class="small">To <input type="date" name="to" value="{{ request.args.get('to', '') }}" onchange="this.form.range.value='';"></label>
+  <label class="small">From <input type="date" name="from" value="{{ request.args.get('from', '') }}" data-clears="range"></label>
+  <label class="small">To <input type="date" name="to" value="{{ request.args.get('to', '') }}" data-clears="range"></label>
   {% endif %}
   <details class="cluster-pick">
     <summary>Clusters{% if cluster_ids %} ({{ cluster_ids|length }}){% else %} (all){% endif %}</summary>

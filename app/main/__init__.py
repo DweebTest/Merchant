@@ -51,10 +51,10 @@ def health():
 @bp.route("/theme/<name>")
 def set_theme(name):
     """Switch the look; remembered in a cookie for a year."""
-    from ..auth import _safe_next
+    from ..urls import safe_next
     from ..themes import available_themes
 
-    resp = make_response(redirect(_safe_next(request.args.get("next")) or url_for("main.index")))
+    resp = make_response(redirect(safe_next(request.args.get("next")) or url_for("main.index")))
     if name in available_themes():
         resp.set_cookie("theme", name, max_age=365 * 24 * 3600, samesite="Lax", httponly=True)
     return resp

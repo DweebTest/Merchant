@@ -6,7 +6,6 @@ email and then linked by its permanent Entra object id, so a later email
 change in Entra doesn't lock them out.
 """
 import re
-from urllib.parse import urlsplit
 
 import msal
 from flask import current_app, flash, redirect, request, session, url_for
@@ -14,6 +13,7 @@ from flask_login import login_user
 from sqlalchemy import func, select
 
 from ..extensions import db
+from ..urls import safe_next
 from ..models import User, utcnow
 
 GUID = re.compile(r"^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")
@@ -39,13 +39,6 @@ def _redirect_uri():
     return current_app.config["ENTRA_REDIRECT_URI"] or url_for("auth.microsoft_callback", _external=True)
 
 
-def _safe_next(target):
-    if not target:
-        return None
-    parts = urlsplit(target)
-    if parts.scheme or parts.netloc or not target.startswith("/") or target.startswith("//"):
-        return None
-    return target
 
 
 def start_login():
@@ -54,7 +47,7 @@ def start_login():
         scopes=[], redirect_uri=_redirect_uri(), prompt="select_account",
     )
     session[FLOW_KEY] = flow
-    session[NEXT_KEY] = _safe_next(request.args.get("next"))
+    session[NEXT_KEY] = safe_next(request.args.get("next"))
     return redirect(flow["auth_uri"])
 
 
