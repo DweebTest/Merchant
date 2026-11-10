@@ -66,10 +66,10 @@ It must match the redirect URI in the app registration exactly.
 Under **Admin → Users → Add user**, enter the person's college email address
 (the one they sign in to Microsoft with) and pick a **Sign-in method**:
 
-* **Merchant password (and Microsoft, once it's set up)**: the person gets a
+* **Merchant password (and single sign-on, if it's set up)**: the person gets a
   temporary password and can also use the Microsoft button. Good while you're
   testing.
-* **Microsoft only**: no password is set and the password form won't let them
+* **Single sign-on only**: no password is set and the password form won't let them
   in. This is the usual choice once Microsoft sign-in works.
 
 The first time someone signs in with Microsoft, Merchant matches them by email

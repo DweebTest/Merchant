@@ -54,11 +54,14 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False, unique=True)
     display_name = db.Column(db.String(120), nullable=False)
-    # Null for users who only sign in through Microsoft Entra.
+    # Null for users who only sign in through single sign-on.
     password_hash = db.Column(db.String(255))
-    # "local" or "entra". Entra users are matched on external_id (the Entra object id).
+    # "local": Merchant password (and single sign-on, if set up). "sso": single sign-on only.
     auth_provider = db.Column(db.String(20), nullable=False, default="local")
+    # Permanent Microsoft Entra object id, set at first Microsoft sign-in.
     external_id = db.Column(db.String(64), unique=True)
+    # SAML NameID from the identity provider (e.g. AWS IAM Identity Center), set at first SAML sign-in.
+    saml_name_id = db.Column(db.String(255), unique=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_active_flag = db.Column("is_active", db.Boolean, nullable=False, default=True)
     must_change_password = db.Column(db.Boolean, nullable=False, default=False)

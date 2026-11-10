@@ -66,6 +66,16 @@ so share that folder from it and mount it on the app server at the same
 `UPLOAD_FOLDER` path. The full walkthrough, including HTTPS, is in
 [docs/split-servers.md](docs/split-servers.md).
 
+## Single sign-on with SAML (AWS IAM Identity Center and others)
+
+Set `SAML_IDP_METADATA_URL` or `SAML_IDP_METADATA_FILE` and the sign-in page
+shows **Sign in with AWS** (the wording is configurable). It works with AWS IAM
+Identity Center and other SAML 2.0 identity providers, under the same rule as
+Microsoft sign-in: only people an admin has added can get in. Merchant's SAML
+details are at `/saml/metadata`. [docs/aws-lab.md](docs/aws-lab.md) is a
+complete AWS walkthrough with separate app and database servers, HTTPS and
+Identity Center.
+
 ## Users, roles and groups
 
 * **Admins** manage users, groups and the cluster and opportunity type lists.
@@ -87,7 +97,7 @@ Once IT registers Merchant in Microsoft Entra ID and you put three values in
 has already added in Merchant can get in; Merchant matches them by email the
 first time and by their Microsoft account ID after that. Anyone else is told to
 ask an administrator. Each user's sign-in method is either *Merchant password
-(and Microsoft)* or *Microsoft only*. Setup steps for you and IT are in
+(and single sign-on)* or *Single sign-on only*. Setup steps for you and IT are in
 [docs/entra-sso.md](docs/entra-sso.md).
 
 ## Entry shortcuts

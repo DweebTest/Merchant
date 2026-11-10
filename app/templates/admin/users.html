@@ -13,7 +13,7 @@
       <td><a href="{{ url_for('admin.user_edit', user_id=u.id) }}">{{ u.display_name }}</a></td>
       <td>{{ u.email }}</td>
       <td>{{ 'Admin' if u.is_admin else 'Contributor' }}</td>
-      <td>{{ 'Microsoft only' if u.auth_provider == 'entra' else 'Password' }}{% if u.external_id %} <span class="tag on" title="Has signed in with Microsoft">Microsoft linked</span>{% endif %}</td>
+      <td>{{ 'Single sign-on only' if u.auth_provider != 'local' else 'Password' }}{% if u.external_id %} <span class="tag on" title="Has signed in with Microsoft">Microsoft linked</span>{% endif %}{% if u.saml_name_id %} <span class="tag on" title="Has signed in with SAML single sign-on">SSO linked</span>{% endif %}</td>
       <td>{{ u.groups | map(attribute='name') | join(', ') or '—' }}</td>
       <td>{% if not u.is_active %}<span class="tag off">Inactive</span>{% elif u.is_locked() %}<span class="tag warn">Locked</span>{% else %}<span class="tag on">Active</span>{% endif %}</td>
       <td>{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'Never' }}</td>

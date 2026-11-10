@@ -1,0 +1,9 @@
+# HTTPS in front of Merchant. Caddy gets and renews a free Let's Encrypt
+# certificate for SITE_ADDRESS automatically and passes requests to the app.
+{$SITE_ADDRESS} {
+	encode gzip
+	request_body {
+		max_size 30MB
+	}
+	reverse_proxy app:8000
+}

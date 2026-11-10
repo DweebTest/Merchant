@@ -1,0 +1,252 @@
+# AWS lab: split servers, HTTPS and AWS single sign-on
+
+This walks through a complete test setup of Merchant on Amazon Web Services:
+
+* **db01**: a database server running MySQL and holding the attachments folder
+* **app01**: an app server running Merchant in Docker, with HTTPS
+* **AWS IAM Identity Center** (formerly "AWS SSO"), so people sign in with
+  their AWS access-portal account. Only people you've added in Merchant get in.
+
+It mirrors the on-premises layout in [split-servers.md](split-servers.md), so
+what you learn here carries over. Allow about two hours the first time. All
+the clicking is in the AWS web console, and you won't need anything installed
+on your PC.
+
+```
+           ┌──────────── AWS (one region) ─────────────────────────────────┐
+ browser ──HTTPS──▶ app01: Caddy ─▶ Merchant ──3306 MySQL──▶ db01: MySQL      │
+           │                         └──2049 NFS (attachments)──▶ db01: files │
+           │  IAM Identity Center ◀── sign-in redirects ──▶ Merchant          │
+           └──────────────────────────────────────────────────────────────────┘
+```
+
+## What it costs
+
+New AWS accounts get up to US$200 in credits and a free plan that lasts up
+to 6 months ([AWS](https://aws.amazon.com/rds/free/)). This lab uses two small
+servers, two public IP addresses and 16 GB of disk, roughly US$20–30 a month,
+paid from those credits. IAM Identity Center has no charge of its own. The
+**Clean up** section at the end removes everything.
+
+## 1. Account and budget alert
+
+1. Create an account at <https://aws.amazon.com/> (choose the free plan if
+   offered). Turn on **MFA** for the root user when prompted, under
+   **Security credentials**.
+2. In the top-right region menu, pick one region and use it for everything,
+   for example **Canada (Central) ca-central-1**.
+3. Search for **Billing and Cost Management → Budgets → Create budget**, choose
+   the **Monthly cost budget** template, set **US$10**, and enter your email.
+   AWS will email you if spending heads past that.
+
+## 2. Security groups (firewall rules)
+
+**EC2 → Security Groups → Create security group** (keep the default VPC):
+
+| Name | Inbound rules |
+|---|---|
+| `merchant-app` | HTTP 80 from Anywhere-IPv4; HTTPS 443 from Anywhere-IPv4; SSH 22 from **My IP** |
+| `merchant-db` | MySQL/Aurora 3306 from **`merchant-app`** (pick the security group as the source); NFS 2049 from **`merchant-app`**; SSH 22 from **My IP** |
+
+"Connect" in the console (EC2 Instance Connect) also needs SSH from AWS's
+connection service. If it says it can't connect, add an SSH rule whose
+source is the prefix list named `com.amazonaws.<region>.ec2-instance-connect`.
+
+The database is never reachable from the internet. Only the app server can
+reach MySQL and the attachments share.
+
+## 3. Launch the two servers
+
+**EC2 → Instances → Launch instances**, twice:
+
+| | db01 | app01 |
+|---|---|---|
+| Name | `merchant-db01` | `merchant-app01` |
+| Image | Ubuntu Server 24.04 LTS | Ubuntu Server 24.04 LTS |
+| Instance type | one marked **Free tier eligible**, e.g. `t3.micro` or `t3.small` | same |
+| Key pair | *Proceed without a key pair* (you'll use Connect) | same |
+| Network settings → Select existing security group | `merchant-db` | `merchant-app` |
+| Storage | 8 GB gp3 (default) | same |
+
+When they're running, click each one and note its **Private IPv4 address**
+(it starts with 172.31). You'll need both.
+
+### Give app01 a fixed public address
+
+**EC2 → Elastic IPs → Allocate Elastic IP address → Allocate**, then
+**Actions → Associate**, and pick `merchant-app01`. Write down the address,
+for example `15.222.10.20`.
+
+Your site's name is that address with dashes, followed by `.sslip.io`, for
+example **`15-222-10-20.sslip.io`**. sslip.io is a free service that points
+such names at the address inside them, which lets HTTPS work without
+buying a domain. If the college gives you a real name later, use that
+instead. In the steps below, **HOST** means this name.
+
+## 4. Set up db01
+
+Select `merchant-db01` → **Connect** → **EC2 Instance Connect** → **Connect**.
+In the terminal that opens, run (use app01's *private* IP):
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/DweebTest/Merchant/main/deploy/aws/db-server-setup.sh
+sudo bash db-server-setup.sh 172.31.x.x
+```
+
+It installs MySQL, creates the `merchant` database with a user that can only
+connect from app01, shares `/srv/merchant-files` with app01 for attachments,
+and sets up a nightly backup in `/srv/backups`. At the end it prints
+`DB_HOST`, `DB_PASSWORD` and so on. **Copy those lines**, because you'll
+need them on app01.
+
+## 5. Set up app01
+
+Connect to `merchant-app01` the same way and run (use db01's *private* IP):
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/DweebTest/Merchant/main/deploy/aws/app-server-setup.sh
+sudo bash app-server-setup.sh 172.31.y.y
+```
+
+This installs Docker, mounts db01's attachments share at
+`/mnt/merchant-files`, and downloads Merchant into `~/Merchant`. Close the
+browser tab and **Connect again**, so Docker works without `sudo`.
+
+### Configure Merchant
+
+```sh
+cd ~/Merchant
+cp .env.example .env
+python3 -c "import secrets; print(secrets.token_hex(32))"   # copy the output
+nano .env
+```
+
+Fill in or change these lines (Ctrl+O, Enter to save, then Ctrl+X to exit):
+
+```ini
+SECRET_KEY=<the long random string you just printed>
+DB_HOST=<from db01's output>
+DB_NAME=merchant
+DB_USER=merchant
+DB_PASSWORD=<from db01's output>
+SITE_ADDRESS=HOST
+SAML_SP_BASE_URL=https://HOST
+```
+
+Leave `MYSQL_ROOT_PASSWORD` empty, because the database lives on db01.
+
+Start it and create your admin account. Use **the email address you'll use
+for AWS sign-in**:
+
+```sh
+docker compose -f docker-compose.aws.yml up -d --build
+docker compose -f docker-compose.aws.yml exec app flask create-admin
+```
+
+Open **https://HOST**. The first visit can take a minute while Caddy gets the
+HTTPS certificate. Sign in with your password and add an entry with an
+attachment. To prove the split works, connect to db01 and run
+`sudo ls /srv/merchant-files`. Your file is there.
+
+## 6. Turn on IAM Identity Center
+
+1. Search for **IAM Identity Center** → **Enable**. When asked, choose to enable
+   it **with AWS Organizations** (an *organization instance*). Only that kind
+   supports SAML for your own apps
+   ([AWS](https://docs.aws.amazon.com/singlesignon/latest/userguide/identity-center-instances.html)).
+   Organizations is free and just wraps your account.
+2. **Users → Add user.** Use the same email as your Merchant admin. Accept the
+   invitation email, choose a password and set up MFA. **Settings** shows your
+   **AWS access portal URL**. Bookmark it.
+
+### Add Merchant as an application
+
+1. **Applications → Customer managed → Add application → I have an application
+   I want to set up → SAML 2.0 → Next.**
+2. **Display name:** `Merchant`.
+3. Under **IAM Identity Center metadata**, **Download** the *IAM Identity Center
+   SAML metadata file*. You'll give this to Merchant.
+4. **Application properties → Application start URL:** `https://HOST/login/saml`
+   (so the tile in the access portal starts sign-in at Merchant). Leave
+   *Relay state* empty.
+5. **Application metadata → Manually type your metadata values:**
+   * **Application ACS URL:** `https://HOST/login/saml/acs`
+   * **Application SAML audience:** `https://HOST/saml/metadata`
+
+   (Or upload the file from `https://HOST/saml/metadata` once step 7 below is
+   done. It holds the same two values.)
+6. **Submit.**
+7. On the application's page, **Actions → Edit attribute mappings**:
+   * **Subject** → `${user:subject}`, format **persistent**
+   * **Add new attribute mapping** → `email` → `${user:email}`, format **unspecified**
+
+   **Save changes.**
+8. **Assign users and groups** → pick yourself (or a group) → **Assign**.
+
+Field names in the AWS console change from time to time. If one doesn't match,
+the values above are still what Merchant expects.
+
+### Give Merchant the metadata
+
+Open the downloaded metadata file in Notepad and copy all of it. On app01:
+
+```sh
+cd ~/Merchant
+nano saml/idp-metadata.xml       # paste, save, exit
+nano .env                        # add the line below
+```
+
+```ini
+SAML_IDP_METADATA_FILE=/app/saml/idp-metadata.xml
+```
+
+```sh
+docker compose -f docker-compose.aws.yml up -d
+```
+
+The sign-in page now shows **Sign in with AWS** (change the wording with
+`SAML_BUTTON_LABEL`). Sign out of Merchant and try it, or click the Merchant
+tile in your AWS access portal.
+
+## 7. Try the rules
+
+* In Merchant, **Admin → Users**: after an AWS sign-in your account shows
+  **SSO linked**.
+* Add a second Identity Center user and assign them to the app, but don't add
+  them in Merchant. Merchant tells them to ask an administrator.
+* Add them in Merchant with **Single sign-on only**. They can now get in with
+  AWS but not with a password.
+* Set `LOCAL_LOGIN_ENABLED=false` in `.env` and run `up -d` to see a sign-on-only
+  login page. Set it back to keep a way in if SSO breaks.
+
+## Day-to-day
+
+* **Update Merchant:** `cd ~/Merchant && git pull && docker compose -f docker-compose.aws.yml up -d --build`
+* **Logs:** `docker compose -f docker-compose.aws.yml logs -f app`
+* **Backups:** db01 writes one each night to `/srv/backups`. Copy them off
+  the server now and then (for example to S3), because they vanish with the
+  instance.
+* **Reset an admin password:** `docker compose -f docker-compose.aws.yml exec app flask create-admin`
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| Site doesn't load at all | `merchant-app` allows 80 and 443; the Elastic IP is attached; `docker compose -f docker-compose.aws.yml ps` |
+| Certificate error | SITE_ADDRESS matches the address bar exactly; `docker compose -f docker-compose.aws.yml logs proxy` |
+| "Waiting for the database" forever | DB_HOST is db01's **private** IP; `merchant-db` allows 3306 from `merchant-app`; db01's script ran without errors |
+| Attachments fail | `mount | grep merchant` on app01; `merchant-db` allows 2049 from `merchant-app` |
+| "Single sign-on couldn't be verified" | `docker compose ... logs app` shows the reason. Usually the ACS URL or audience in Identity Center doesn't match `https://HOST/...` exactly, or the metadata file is from a different app |
+| "isn't set up in Merchant yet" | The Merchant user's email must match the Identity Center user's email |
+| AWS says you're not assigned | Step 8 of *Add Merchant as an application* |
+
+## Clean up
+
+When you're done, in this order:
+
+1. **EC2 → Instances**: select both → **Instance state → Terminate**.
+2. **EC2 → Elastic IPs**: select it → **Release**. An unattached address still costs money.
+3. **EC2 → Security Groups**: delete `merchant-app` and `merchant-db`.
+4. **IAM Identity Center → Applications**: delete Merchant. You can leave
+   Identity Center itself on, since it has no charge.
+5. Check **Billing → Bills** a day later to make sure nothing is still running.
