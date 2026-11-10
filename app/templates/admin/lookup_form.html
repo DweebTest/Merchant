@@ -11,7 +11,23 @@
     {{ field(form.sort_order) }}
     {{ field(form.is_active) }}
     {% if kind == 'types' %}{{ field(form.report_group) }}{% endif %}
+    {% if kind == 'priorities' %}{{ field(form.is_high) }}{% endif %}
+    {% if kind == 'statuses' %}{{ field(form.is_open) }}{{ field(form.colour) }}{% endif %}
+    {% if spec.single %}{{ field(form.is_default) }}{% endif %}
     <button class="primary" type="submit">Save</button>
   </form>
+  {% if item %}
+  <hr>
+  {% if used %}
+  <p class="muted">Used by {{ used }} {{ 'entry' if used == 1 else 'entries' }}. Renaming changes it on all of them.
+    To stop people choosing it, untick Active.</p>
+  {% elif not item.is_default %}
+  <form method="post" action="{{ url_for('admin.lookup_delete', kind=kind, item_id=item.id) }}"
+        data-confirm="Delete {{ item.name }}?">
+    {{ confirm_form.hidden_tag() }}
+    <button class="danger" type="submit">Delete {{ spec.singular }}</button>
+  </form>
+  {% endif %}
+  {% endif %}
 </div>
 {% endblock %}

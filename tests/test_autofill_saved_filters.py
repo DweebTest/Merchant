@@ -112,4 +112,9 @@ def test_owner_deletes(admin_client, app):
 
 def test_save_form_only_when_filtered(admin_client):
     assert b"Save this filter" not in admin_client.get("/entries/").data
-    assert b"Save this filter" in admin_client.get("/entries/?status=open").data
+    assert b"Save this filter" in admin_client.get(f"/entries/?status={_open_id()}").data
+
+
+def _open_id():
+    from app.models import FollowUpStatus
+    return db.session.scalar(select(FollowUpStatus.id).where(FollowUpStatus.name == "Open"))

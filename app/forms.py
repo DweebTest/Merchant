@@ -83,21 +83,22 @@ class LookupForm(FlaskForm):
         default="",
         description="Entries with this type appear in the chosen report.",
     )
+    # Only shown for priorities.
+    is_high = BooleanField("Counts as high priority",
+                           description="Shown on the home page and in the Priority follow-ups report.")
+    # Only shown for follow-up statuses.
+    is_open = BooleanField("Still needs follow-up",
+                           description="Entries with this status count as open follow-ups. Untick for statuses like Done.")
+    colour = SelectField("Tag colour", choices=[("amber", "Amber"), ("blue", "Blue"), ("green", "Green"), ("grey", "Grey")],
+                         default="grey")
+    # Priorities and statuses.
+    is_default = BooleanField("Default for new entries")
     submit = SubmitField("Save")
 
 
 class ConfirmForm(FlaskForm):
     """Empty form used for CSRF-protected POST buttons."""
     submit = SubmitField("Confirm")
-
-
-STATUS_CHOICES = [
-    ("open", "Open"),
-    ("in_progress", "In progress"),
-    ("done", "Done"),
-    ("no_action", "No action needed"),
-]
-PRIORITY_CHOICES = [("high", "High"), ("normal", "Normal"), ("low", "Low")]
 
 
 def at_least_one(form, field):
@@ -121,8 +122,9 @@ class EntryForm(FlaskForm):
     opportunity_types = MultiCheckboxField("Opportunity types", coerce=int, validators=[at_least_one])
     next_step = TextAreaField("Suggested next step", validators=[Optional(), Length(max=5000)])
     college_area = StringField("College area impacted", validators=[Optional(), Length(max=150)])
-    priority = SelectField("Priority", choices=PRIORITY_CHOICES, default="normal")
-    follow_up_status = SelectField("Follow-up status", choices=STATUS_CHOICES, default="open")
+    # Choices come from the admin-editable lists (set in the view).
+    priority_id = SelectField("Priority", coerce=int, validate_choice=True)
+    status_id = SelectField("Follow-up status", coerce=int, validate_choice=True)
     follow_up_date = DateField("Follow up by", validators=[Optional()])
     link_url = StringField(
         "Link", validators=[Optional(), URL(require_tld=False, message="Enter a full web address starting with http:// or https://"), Length(max=1000)]

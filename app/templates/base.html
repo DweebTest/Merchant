@@ -25,8 +25,7 @@
 {%- set nav = nav + [
   (url_for('admin.users'), 'Users', ep.startswith('admin.user')),
   (url_for('admin.groups'), 'Groups', ep.startswith('admin.group')),
-  (url_for('admin.lookup_list', kind='clusters'), 'Clusters', bp == 'admin' and kind == 'clusters'),
-  (url_for('admin.lookup_list', kind='types'), 'Opportunity types', bp == 'admin' and kind == 'types'),
+  (url_for('admin.lists'), 'Lists', ep == 'admin.lists' or ep.startswith('admin.lookup')),
 ] -%}
 {%- endif -%}
 {%- set here = request.full_path if request.method == 'GET' else None -%}
