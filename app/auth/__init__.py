@@ -1,11 +1,11 @@
 from datetime import timedelta
-from urllib.parse import urlsplit
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import select
 
 from ..extensions import db
+from ..urls import safe_next
 from ..forms import ChangePasswordForm, LoginForm
 from ..models import User, utcnow
 from ..extensions import csrf
@@ -15,14 +15,6 @@ from .entra import entra_enabled, finish_login, start_login
 bp = Blueprint("auth", __name__)
 
 
-def _safe_next(target):
-    """Only follow ?next= links that stay on this site."""
-    if not target:
-        return None
-    parts = urlsplit(target)
-    if parts.scheme or parts.netloc or not target.startswith("/") or target.startswith("//"):
-        return None
-    return target
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -65,7 +57,7 @@ def login():
         db.session.commit()
         login_user(user, remember=form.remember.data)
         session["auth_method"] = "local"
-        return redirect(_safe_next(request.args.get("next")) or url_for("main.index"))
+        return redirect(safe_next(request.args.get("next")) or url_for("main.index"))
 
     return render_template("auth/login.html", form=form)
 
@@ -92,9 +84,12 @@ def change_password():
         elif form.new_password.data == form.current_password.data:
             form.new_password.errors.append("Choose a password you haven't just used.")
         else:
-            current_user.set_password(form.new_password.data)
-            current_user.must_change_password = False
+            user = current_user._get_current_object()
+            user.set_password(form.new_password.data)   # also signs out other browsers and devices
+            user.must_change_password = False
             db.session.commit()
+            login_user(user)                             # keep this browser signed in with the new token
+            session["auth_method"] = "local"
             flash("Password changed.", "success")
             return redirect(url_for("main.index"))
     return render_template("auth/change_password.html", form=form)

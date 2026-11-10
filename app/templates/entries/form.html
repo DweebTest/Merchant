@@ -79,7 +79,7 @@
   {% if entry %}
     {% for a in entry.attachments %}
     <form id="del-att-{{ a.id }}" method="post" action="{{ url_for('entries.delete_attachment', attachment_id=a.id) }}"
-          onsubmit="return confirm('Remove this attachment?');">
+          data-confirm="Remove this attachment?">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </form>
     {% endfor %}
