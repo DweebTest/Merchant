@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Sign in{% endblock %}
+{% block main_class %}auth{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Merchant</h1>
+  <p class="muted">Market intelligence and opportunities</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.email, autofocus=true) }}
+    {{ field(form.password) }}
+    {{ field(form.remember) }}
+    <button class="primary wide" type="submit">Sign in</button>
+  </form>
+  {# Step 4 adds a "Sign in with Microsoft" button here. #}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Merchant{% endblock %} · Merchant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('main.index') }}">Merchant</a>
+    <nav>
+      <a href="{{ url_for('main.index') }}">Home</a>
+      {% if current_user.is_admin %}
+      <a href="{{ url_for('admin.users') }}">Users</a>
+      <a href="{{ url_for('admin.groups') }}">Groups</a>
+      <a href="{{ url_for('admin.lookup_list', kind='clusters') }}">Clusters</a>
+      <a href="{{ url_for('admin.lookup_list', kind='types') }}">Opportunity types</a>
+      {% endif %}
+    </nav>
+    <div class="who">
+      <span>{{ current_user.display_name }}</span>
+      {% if current_user.auth_provider == 'local' %}
+      <a href="{{ url_for('auth.change_password') }}">Password</a>
+      {% endif %}
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="link" type="submit">Sign out</button>
+      </form>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="{% block main_class %}page{% endblock %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}" role="status">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
