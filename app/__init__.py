@@ -85,6 +85,13 @@ def create_app(config_class=None):
     from .auth.entra import entra_enabled
 
     @app.context_processor
+    def theme_choice():
+        from flask import request
+        from .main import THEMES
+        chosen = request.cookies.get("theme") or app.config["DEFAULT_THEME"]
+        return {"theme": chosen if chosen in THEMES else "classic"}
+
+    @app.context_processor
     def sign_in_options():
         return {"entra_enabled": entra_enabled(app), "local_login_enabled": app.config["LOCAL_LOGIN_ENABLED"]}
 

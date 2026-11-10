@@ -5,28 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Merchant{% endblock %} · Merchant</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% if theme == 'spaceage' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/spaceage.css') }}">
+  {% endif %}
 </head>
-<body>
+{%- set bp = request.blueprint -%}
+{%- set ep = request.endpoint or '' -%}
+{%- set nav = [
+  ('main.index', url_for('main.index'), 'Home', ep == 'main.index'),
+  ('entries.index', url_for('entries.index'), 'Knowledge base', bp == 'entries' and ep != 'entries.new'),
+  ('entries.new', url_for('entries.new'), 'New entry', ep == 'entries.new'),
+  ('reports.index', url_for('reports.index'), 'Reports', bp == 'reports'),
+] -%}
+{%- if current_user.is_authenticated and current_user.is_admin -%}
+{%- set nav = nav + [
+  ('admin.users', url_for('admin.users'), 'Users', ep.startswith('admin.user')),
+  ('admin.groups', url_for('admin.groups'), 'Groups', ep.startswith('admin.group')),
+  ('clusters', url_for('admin.lookup_list', kind='clusters'), 'Clusters', bp == 'admin' and request.view_args and request.view_args.get('kind') == 'clusters'),
+  ('types', url_for('admin.lookup_list', kind='types'), 'Opportunity types', bp == 'admin' and request.view_args and request.view_args.get('kind') == 'types'),
+] -%}
+{%- endif -%}
+{%- set other_theme = 'classic' if theme == 'spaceage' else 'spaceage' -%}
+{%- set theme_link = url_for('main.set_theme', name=other_theme, next=request.full_path if request.method == 'GET' else None) -%}
+{%- set theme_label = 'Classic look' if theme == 'spaceage' else 'Space-age look' -%}
+<body class="theme-{{ theme }}">
+{% if theme == 'spaceage' and current_user.is_authenticated %}
+  <div class="sa-frame">
+    <aside class="sa-side">
+      <a class="sa-brand" href="{{ url_for('main.index') }}">Merchant</a>
+      <nav class="sa-nav" aria-label="Main">
+        {% for key, href, label, active in nav %}
+        <a href="{{ href }}" class="sa-pill{{ ' active' if active }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div class="sa-fill"></div>
+      <div class="sa-who">
+        <span class="sa-user">{{ current_user.display_name }}</span>
+        {% if current_user.auth_provider == 'local' %}
+        <a class="sa-pill small" href="{{ url_for('auth.change_password') }}">Password</a>
+        {% endif %}
+        <a class="sa-pill small" href="{{ theme_link }}">{{ theme_label }}</a>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="sa-pill small alert" type="submit">Sign out</button>
+        </form>
+      </div>
+      <div class="sa-foot"></div>
+    </aside>
+    <div class="sa-body">
+      <div class="sa-bar" aria-hidden="true">
+        <span class="seg a"></span><span class="seg b"></span><span class="seg c"></span>
+        <span class="sa-readout">{{ self.title() | upper }}</span>
+        <span class="seg d"></span>
+      </div>
+      <main class="{% block main_class %}page{% endblock %}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" role="status">{{ message }}</div>
+          {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+{% else %}
   {% if current_user.is_authenticated %}
   <header class="topbar">
     <a class="brand" href="{{ url_for('main.index') }}">Merchant</a>
     <nav>
-      <a href="{{ url_for('main.index') }}">Home</a>
-      <a href="{{ url_for('entries.index') }}">Knowledge base</a>
-      <a href="{{ url_for('entries.new') }}">New entry</a>
-      <a href="{{ url_for('reports.index') }}">Reports</a>
-      {% if current_user.is_admin %}
-      <a href="{{ url_for('admin.users') }}">Users</a>
-      <a href="{{ url_for('admin.groups') }}">Groups</a>
-      <a href="{{ url_for('admin.lookup_list', kind='clusters') }}">Clusters</a>
-      <a href="{{ url_for('admin.lookup_list', kind='types') }}">Opportunity types</a>
-      {% endif %}
+      {% for key, href, label, active in nav %}
+      <a href="{{ href }}"{% if active %} class="active" aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
     </nav>
     <div class="who">
       <span>{{ current_user.display_name }}</span>
       {% if current_user.auth_provider == 'local' %}
       <a href="{{ url_for('auth.change_password') }}">Password</a>
       {% endif %}
+      <a href="{{ theme_link }}">{{ theme_label }}</a>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="link" type="submit">Sign out</button>
@@ -35,13 +91,14 @@
   </header>
   {% endif %}
 
-  <main class="{% block main_class %}page{% endblock %}">
+  <main class="{{ self.main_class() }}">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
         <div class="flash flash-{{ category }}" role="status">{{ message }}</div>
       {% endfor %}
     {% endwith %}
-    {% block content %}{% endblock %}
+    {{ self.content() }}
   </main>
+{% endif %}
 </body>
 </html>

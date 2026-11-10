@@ -31,7 +31,8 @@ code { background: var(--off-bg); padding: 0 .3em; border-radius: 4px; }
 .brand { font-weight: 700; text-decoration: none; color: var(--text); font-size: 1.1rem; }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 1rem; flex: 1; }
 .topbar nav a { text-decoration: none; color: var(--muted); }
-.topbar nav a:hover { color: var(--text); }
+.topbar nav a:hover, .topbar nav a.active { color: var(--text); }
+.topbar nav a.active { font-weight: 600; }
 .who { display: flex; gap: 1rem; align-items: center; color: var(--muted); }
 .who form { margin: 0; }
 

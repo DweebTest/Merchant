@@ -99,6 +99,15 @@ ask an administrator. Each user's sign-in method is either *Merchant password
   just for you or shared with everyone. Saved filters appear as buttons above
   the results.
 
+## Look
+
+Merchant opens in a space-age, control-panel style theme (black background,
+curved side frame, coloured buttons). Anyone can switch to the plain classic
+look with **Classic look** in the menu, and back again; the choice is remembered
+in their browser. Set `DEFAULT_THEME=classic` in `.env` to make classic the
+site-wide default. The theme uses the Antonio font (SIL Open Font License),
+which ships with the app, so nothing loads from the internet.
+
 ## Reports
 
 Under **Reports**, anyone signed in can view these on screen or download them
