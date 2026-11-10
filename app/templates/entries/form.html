@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ 'Edit entry' if entry else 'New entry' }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('entries.detail', entry_id=entry.id) if entry else url_for('entries.index') }}">← {{ 'Back to entry' if entry else 'Knowledge base' }}</a></p>
+<div class="card wide-card">
+  <h1>{{ 'Edit entry' if entry else 'New entry' }}</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="grid-2">
+      {{ field(form.entry_date) }}
+      <div class="field{% if form.organization.errors %} has-error{% endif %}">
+        {{ form.organization.label() }}
+        {{ form.organization(list="org-list", autocomplete="off", autofocus=not entry) }}
+        <datalist id="org-list">
+          {% for name in organizations %}<option value="{{ name }}">{% endfor %}
+        </datalist>
+        <small class="muted">Pick an existing one or type a new name.</small>
+        {% for e in form.organization.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+    </div>
+
+    {{ field(form.description) }}
+
+    <details class="contact-box" {% if form.contact_name.data %}open{% endif %}>
+      <summary>Contact (optional)</summary>
+      <div class="grid-2">
+        {{ field(form.contact_name) }}
+        {{ field(form.contact_title) }}
+        {{ field(form.contact_email) }}
+        {{ field(form.contact_phone) }}
+      </div>
+    </details>
+
+    {{ field(form.clusters) }}
+    {{ field(form.opportunity_types) }}
+    {{ field(form.next_step) }}
+
+    <div class="grid-3">
+      {{ field(form.priority) }}
+      {{ field(form.follow_up_status) }}
+      {{ field(form.follow_up_date) }}
+    </div>
+
+    <div class="grid-2">
+      {{ field(form.college_area) }}
+      {{ field(form.link_url) }}
+    </div>
+
+    {% if entry and entry.attachments %}
+    <div class="field">
+      <label>Current attachments</label>
+      <ul class="files">
+        {% for a in entry.attachments %}
+        <li><a href="{{ url_for('entries.download', attachment_id=a.id) }}">{{ a.original_filename }}</a>
+          <button class="link danger" type="submit" form="del-att-{{ a.id }}">Remove</button></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <div class="field">
+      {{ form.attachments.label() }}
+      {{ form.attachments(multiple=true) }}
+      <small class="muted">PDF, Office documents, images, emails, text or zip files. Up to {{ config.MAX_CONTENT_LENGTH // (1024 * 1024) }} MB in total.</small>
+    </div>
+
+    <div class="actions">
+      <button class="primary" type="submit">Save entry</button>
+      {% if not entry %}<button type="submit" name="another" value="1">Save and add another</button>{% endif %}
+    </div>
+  </form>
+
+  {% if entry %}
+    {% for a in entry.attachments %}
+    <form id="del-att-{{ a.id }}" method="post" action="{{ url_for('entries.delete_attachment', attachment_id=a.id) }}"
+          onsubmit="return confirm('Remove this attachment?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

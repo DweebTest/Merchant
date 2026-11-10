@@ -1,0 +1,32 @@
+{% set STATUS_LABELS = {'open': 'Open', 'in_progress': 'In progress', 'done': 'Done', 'no_action': 'No action needed'} %}
+
+{% macro status_tag(status) -%}
+  <span class="tag status-{{ status }}">{{ STATUS_LABELS.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro priority_tag(priority) -%}
+  {% if priority == 'high' %}<span class="tag prio-high">High priority</span>
+  {% elif priority == 'low' %}<span class="tag off">Low priority</span>{% endif %}
+{%- endmacro %}
+
+{% macro entry_card(e) %}
+<article class="entry">
+  <div class="entry-top">
+    <a class="entry-org" href="{{ url_for('entries.detail', entry_id=e.id) }}">{{ e.organization.name }}</a>
+    <span class="muted">{{ e.entry_date | shortdate }}</span>
+  </div>
+  <p class="entry-desc">{{ e.description | truncate(220) }}</p>
+  <div class="tags">
+    {% for c in e.clusters %}<span class="tag cluster">{{ c.name }}</span>{% endfor %}
+    {% for t in e.opportunity_types %}<span class="tag otype">{{ t.name }}</span>{% endfor %}
+  </div>
+  <div class="entry-meta muted">
+    {{ status_tag(e.follow_up_status) }} {{ priority_tag(e.priority) }}
+    {% if e.follow_up_date and e.follow_up_status in ('open', 'in_progress') %}
+      <span>Follow up by {{ e.follow_up_date | shortdate }}</span>
+    {% endif %}
+    {% if e.attachments %}<span>📎 {{ e.attachments | length }}</span>{% endif %}
+    <span>by {{ e.created_by.display_name }}</span>
+  </div>
+</article>
+{% endmacro %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "entries/_macros.html" import entry_card %}
+{% block title %}Knowledge base{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Knowledge base</h1>
+  <a class="button primary" href="{{ url_for('entries.new') }}">+ New entry</a>
+</div>
+
+<form class="searchbar" method="get" action="{{ url_for('entries.index') }}">
+  <input type="search" name="q" value="{{ args.q }}" placeholder="Search descriptions, next steps, organizations, contacts…" aria-label="Search">
+  <button class="primary" type="submit">Search</button>
+</form>
+
+<div class="browse">
+  <details class="filter-panel" id="filter-panel" open>
+  <summary>Filters{% if filtered %} (on){% endif %}</summary>
+  <form class="filters" method="get" action="{{ url_for('entries.index') }}">
+    <input type="hidden" name="q" value="{{ args.q }}">
+
+    <fieldset>
+      <legend>Date</legend>
+      <select name="range" aria-label="Date range">
+        <option value="">Any time</option>
+        {% for key, label in presets.items() %}
+        <option value="{{ key }}" {% if args.range == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label class="small">From <input type="date" name="from" value="{{ request.args.get('from', '') }}"></label>
+      <label class="small">To <input type="date" name="to" value="{{ request.args.get('to', '') }}"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Economic cluster</legend>
+      {% for c in clusters %}
+      <label class="check"><input type="checkbox" name="cluster" value="{{ c.id }}" {% if c.id in args.clusters %}checked{% endif %}> {{ c.name }}{% if not c.is_active %} <span class="muted">(retired)</span>{% endif %}</label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Opportunity type</legend>
+      {% for t in types %}
+      <label class="check"><input type="checkbox" name="type" value="{{ t.id }}" {% if t.id in args.types %}checked{% endif %}> {{ t.name }}{% if not t.is_active %} <span class="muted">(retired)</span>{% endif %}</label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Follow-up</legend>
+      {% for value, label in statuses %}
+      <label class="check"><input type="checkbox" name="status" value="{{ value }}" {% if value in args.status %}checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Priority</legend>
+      {% for value, label in priorities %}
+      <label class="check"><input type="checkbox" name="priority" value="{{ value }}" {% if value in args.priority %}checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+
+    <label class="check"><input type="checkbox" name="mine" value="1" {% if args.mine %}checked{% endif %}> Only entries I added</label>
+
+    <label class="small">Sort by
+      <select name="sort">
+        <option value="date" {% if args.sort == 'date' %}selected{% endif %}>Newest date first</option>
+        <option value="date_asc" {% if args.sort == 'date_asc' %}selected{% endif %}>Oldest date first</option>
+        <option value="added" {% if args.sort == 'added' %}selected{% endif %}>Recently added</option>
+        <option value="follow_up" {% if args.sort == 'follow_up' %}selected{% endif %}>Follow-up date</option>
+      </select>
+    </label>
+
+    <div class="actions">
+      <button class="primary" type="submit">Apply filters</button>
+      {% if filtered %}<a class="button" href="{{ url_for('entries.index') }}">Clear</a>{% endif %}
+    </div>
+  </form>
+  </details>
+  <script>
+    // On phones, start with the filters folded so results show first.
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      document.getElementById("filter-panel").removeAttribute("open");
+    }
+  </script>
+
+  <section class="results">
+    <p class="muted count">
+      {{ page.total }} {{ 'entry' if page.total == 1 else 'entries' }}{% if filtered %} match{% if page.total == 1 %}es{% endif %} your search{% endif %}.
+    </p>
+    {% for e in page.items %}
+      {{ entry_card(e) }}
+    {% else %}
+      <p>{% if filtered %}Nothing matches. Try fewer words or clear some filters.{% else %}No entries yet. <a href="{{ url_for('entries.new') }}">Add the first one</a>.{% endif %}</p>
+    {% endfor %}
+
+    {% if page.pages > 1 %}
+    <nav class="pager">
+      {% set qs = request.args.to_dict(flat=false) %}
+      {% if page.has_prev %}{% set _ = qs.update({'page': [page.prev_num]}) %}<a class="button" href="{{ url_for('entries.index', **qs) }}">← Previous</a>{% endif %}
+      <span class="muted">Page {{ page.page }} of {{ page.pages }}</span>
+      {% if page.has_next %}{% set _ = qs.update({'page': [page.next_num]}) %}<a class="button" href="{{ url_for('entries.index', **qs) }}">Next →</a>{% endif %}
+    </nav>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

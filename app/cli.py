@@ -76,5 +76,10 @@ def register_cli(app):
         user.is_admin = True
         user.is_active_flag = True
         user.set_password(password)
+        # Also clears a lockout, so this doubles as "I'm locked out" recovery.
+        user.auth_provider = "local"
+        user.must_change_password = False
+        user.failed_login_count = 0
+        user.locked_until = None
         db.session.commit()
         click.echo(f"Administrator ready: {email}")
