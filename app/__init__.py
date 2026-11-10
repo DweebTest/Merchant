@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 from flask_login import current_user
 
 from .config import Config
@@ -15,6 +15,11 @@ def create_app(config_class=None):
         raise RuntimeError("SECRET_KEY is not set. Copy .env.example to .env and fill it in.")
 
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+    if app.config.get("TRUSTED_PROXIES"):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        n = app.config["TRUSTED_PROXIES"]
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=n, x_proto=n, x_host=n, x_port=n)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -56,6 +61,7 @@ def create_app(config_class=None):
         if (
             current_user.is_authenticated
             and current_user.must_change_password
+            and session.get("auth_method") != "microsoft"
             and request.endpoint not in {"auth.change_password", "auth.logout", "static"}
         ):
             return redirect(url_for("auth.change_password"))
@@ -75,6 +81,12 @@ def create_app(config_class=None):
     @app.template_filter("longdate")
     def longdate(d):
         return f"{d:%A}, {d:%B} {d.day}, {d.year}" if d else ""
+
+    from .auth.entra import entra_enabled
+
+    @app.context_processor
+    def sign_in_options():
+        return {"entra_enabled": entra_enabled(app), "local_login_enabled": app.config["LOCAL_LOGIN_ENABLED"]}
 
     from .cli import register_cli
     from .demo import register_demo_cli

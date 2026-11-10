@@ -52,6 +52,12 @@ class UserForm(FlaskForm):
         validators=[Optional(), password_length],
         description="They'll be asked to choose their own at first sign-in.",
     )
+    auth_provider = SelectField(
+        "Sign-in method",
+        choices=[("local", "Merchant password (and Microsoft, once it's set up)"), ("entra", "Microsoft only")],
+        default="local",
+        description="Microsoft sign-in matches people by this email address.",
+    )
     is_admin = BooleanField("Administrator")
     is_active = BooleanField("Active", default=True)
     groups = MultiCheckboxField("Groups", coerce=int)
