@@ -78,6 +78,10 @@ class Config:
     # balancer) that handles HTTPS, so links and redirects use https://.
     TRUSTED_PROXIES = int(os.environ.get("TRUSTED_PROXIES", "0"))
 
+    # Look of the site for anyone who hasn't picked one: "orbit" or "classic"
+    # (or the name of a theme in app/static/themes-local/).
+    DEFAULT_THEME = os.environ.get("DEFAULT_THEME", "orbit").strip().lower()
+
 
 class TestConfig(Config):
     TESTING = True

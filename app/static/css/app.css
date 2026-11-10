@@ -31,7 +31,20 @@ code { background: var(--off-bg); padding: 0 .3em; border-radius: 4px; }
 .brand { font-weight: 700; text-decoration: none; color: var(--text); font-size: 1.1rem; }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 1rem; flex: 1; }
 .topbar nav a { text-decoration: none; color: var(--muted); }
-.topbar nav a:hover { color: var(--text); }
+.topbar nav a:hover, .topbar nav a.active { color: var(--text); }
+.topbar nav a.active { font-weight: 600; }
+.titlebar { display: none; }
+.look-menu { position: relative; }
+.look-menu summary { cursor: pointer; color: var(--accent); list-style: none; }
+.look-menu summary::-webkit-details-marker { display: none; }
+.look-menu summary::after { content: " ▾"; font-size: .8em; }
+.look-menu ul { position: absolute; right: 0; top: calc(100% + .4rem); z-index: 10; list-style: none; margin: 0;
+  padding: .35rem 0; min-width: 9rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.look-menu li a { display: block; padding: .35rem .9rem; text-decoration: none; color: var(--text); }
+.look-menu li a:hover { background: var(--off-bg); }
+.look-menu li a.active { font-weight: 600; }
+.look-menu li a.active::before { content: "✓ "; }
 .who { display: flex; gap: 1rem; align-items: center; color: var(--muted); }
 .who form { margin: 0; }
 

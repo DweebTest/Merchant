@@ -5,3 +5,7 @@ __pycache__/
 venv/
 instance/
 .pytest_cache/
+
+# Personal themes stay on this machine.
+app/static/themes-local/*
+!app/static/themes-local/README.md
