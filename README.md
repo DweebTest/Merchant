@@ -99,6 +99,19 @@ ask an administrator. Each user's sign-in method is either *Merchant password
   just for you or shared with everyone. Saved filters appear as buttons above
   the results.
 
+## Look
+
+Merchant opens in **Orbit**, a dark sci-fi look (glassy panels with cut
+corners and cyan accents). Anyone can switch to the plain **Classic** look under
+**Look** in the menu, and their browser remembers it. `DEFAULT_THEME=classic`
+in `.env` makes Classic the default for everyone. Orbit's Chakra Petch font
+(SIL Open Font License) ships with the app, so nothing loads from the internet.
+
+**Personal themes:** put `<name>.css` (and any fonts it uses) in
+`app/static/themes-local/`. It appears in the Look menu on that machine only;
+git ignores the folder, so it never reaches the repository. See the README in
+that folder.
+
 ## Reports
 
 Under **Reports**, anyone signed in can view these on screen or download them

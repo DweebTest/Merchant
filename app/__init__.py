@@ -85,6 +85,12 @@ def create_app(config_class=None):
     from .auth.entra import entra_enabled
 
     @app.context_processor
+    def theme_choice():
+        from .themes import available_themes, current_theme
+        themes = available_themes()
+        return {"themes": themes, "theme": current_theme(themes)}
+
+    @app.context_processor
     def sign_in_options():
         return {"entra_enabled": entra_enabled(app), "local_login_enabled": app.config["LOCAL_LOGIN_ENABLED"]}
 

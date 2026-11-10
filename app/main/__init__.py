@@ -1,6 +1,6 @@
 from datetime import date
 
-from flask import Blueprint, render_template
+from flask import Blueprint, make_response, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func, select
 
@@ -46,3 +46,15 @@ def health():
     """For load balancers and uptime checks: confirms the database answers."""
     db.session.execute(select(1))
     return {"status": "ok"}
+
+
+@bp.route("/theme/<name>")
+def set_theme(name):
+    """Switch the look; remembered in a cookie for a year."""
+    from ..auth import _safe_next
+    from ..themes import available_themes
+
+    resp = make_response(redirect(_safe_next(request.args.get("next")) or url_for("main.index")))
+    if name in available_themes():
+        resp.set_cookie("theme", name, max_age=365 * 24 * 3600, samesite="Lax", httponly=True)
+    return resp
