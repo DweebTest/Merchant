@@ -66,6 +66,8 @@ class User(UserMixin, db.Model):
     locked_until = db.Column(db.DateTime)
     last_login_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
 
     groups = db.relationship("Group", secondary=user_groups, back_populates="members", order_by="Group.name")
 
@@ -104,6 +106,8 @@ class Group(db.Model):
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
 
     members = db.relationship("User", secondary=user_groups, back_populates="groups", order_by="User.display_name")
     permissions = db.relationship("Permission", secondary=group_permissions, back_populates="groups")
@@ -153,6 +157,8 @@ class Organization(db.Model):
     website = db.Column(db.String(500))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
 
     contacts = db.relationship("Contact", back_populates="organization", order_by="Contact.name")
     entries = db.relationship("Entry", back_populates="organization")
@@ -168,6 +174,8 @@ class Contact(db.Model):
     email = db.Column(db.String(255))
     phone = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
 
     organization = db.relationship("Organization", back_populates="contacts")
 
@@ -191,6 +199,8 @@ class Entry(db.Model):
     follow_up_date = db.Column(db.Date, index=True)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
+    # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     organization = db.relationship("Organization", back_populates="entries")

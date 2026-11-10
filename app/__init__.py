@@ -77,6 +77,8 @@ def create_app(config_class=None):
         return f"{d:%A}, {d:%B} {d.day}, {d.year}" if d else ""
 
     from .cli import register_cli
+    from .demo import register_demo_cli
     register_cli(app)
+    register_demo_cli(app)
 
     return app
