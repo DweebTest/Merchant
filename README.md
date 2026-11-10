@@ -119,8 +119,9 @@ in `.env` makes Classic the default for everyone. Orbit's Chakra Petch font
 
 **Personal themes:** put `<name>.css` (and any fonts it uses) in
 `app/static/themes-local/`. It appears in the Look menu on that machine only;
-git ignores the folder, so it never reaches the repository. See the README in
-that folder.
+git ignores the folder, so it never reaches the repository. Docker reads the
+folder live, so new or edited themes appear on a page refresh. See the README
+in that folder.
 
 ## Reports
 
