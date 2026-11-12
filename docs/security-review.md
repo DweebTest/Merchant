@@ -55,7 +55,7 @@ Everyone has to sign in again once after this update.
 
 - [ ] A new random `SECRET_KEY`, and `chmod 600 .env`
 - [ ] HTTPS only (`SESSION_COOKIE_SECURE=true`, which the AWS setup sets)
-- [ ] No demo data (`flask demo-data clear`)
+- [ ] No demo data before real use (`flask demo-data clear`). Demo people can't sign in, but the entries are made up
 - [ ] Disks encrypted and IMDSv2 required (see the AWS guide)
 - [ ] Backups copied off the database server, and a restore tested once
 - [ ] Root account has MFA and isn't used day to day

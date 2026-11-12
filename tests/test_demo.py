@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 
-from app.demo import DEMO_PASSWORD, clear_demo, load_demo
+from app.demo import clear_demo, load_demo
 from app.extensions import db
 from app.models import Contact, Entry, Group, Organization, User
 
@@ -22,9 +22,28 @@ def test_load_creates_flagged_data(app):
     assert all(e.clusters and e.opportunity_types for e in db.session.scalars(select(Entry)))
 
 
-def test_demo_users_can_sign_in(app, client):
+def test_demo_people_are_past_users_who_cannot_sign_in(app, client):
+    load_demo(entries=40)
+    people = db.session.scalars(select(User).where(User.is_demo.is_(True))).all()
+    assert people and all(not u.is_active and u.password_hash is None for u in people)
+    for password in ("Demo-pass-2026", "", "password"):
+        assert login(client, "alex.morgan@demo.example.com", password).status_code != 302
+
+
+def test_old_demo_logins_are_switched_off_on_load(app, client):
+    old = make_user("alex.morgan@demo.example.com", "Demo-pass-2026", is_demo=True)
     load_demo(entries=5)
-    assert login(client, "alex.morgan@demo.example.com", DEMO_PASSWORD).status_code == 302
+    db.session.refresh(old)
+    assert not old.is_active and old.password_hash is None
+    assert login(client, "alex.morgan@demo.example.com", "Demo-pass-2026").status_code != 302
+
+
+def test_past_users_leave_open_follow_ups(app, admin_client):
+    counts = load_demo(entries=60)
+    assert counts["open"] >= 20
+    entry = db.session.scalar(select(Entry).where(Entry.is_demo.is_(True)).limit(1))
+    assert b"(former user)" in admin_client.get(f"/entries/{entry.id}").data
+    assert b"(former user)" in admin_client.get("/entries/").data
 
 
 def test_load_is_repeatable(app):
@@ -82,6 +101,7 @@ def test_cli_load_and_clear(app):
     result = runner.invoke(args=["demo-data", "load", "--entries", "15"])
     assert result.exit_code == 0 and "Added 15 entries" in result.output
     again = runner.invoke(args=["demo-data", "load"])
+    assert "follow-ups are still open" in result.output and "password" not in result.output.lower()
     assert again.exit_code != 0 and "already loaded" in again.output
     cleared = runner.invoke(args=["demo-data", "clear", "--yes"])
     assert cleared.exit_code == 0 and "Removed 15 entries" in cleared.output

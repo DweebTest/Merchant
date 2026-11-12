@@ -174,9 +174,10 @@ Leave `MYSQL_ROOT_PASSWORD` empty, because the database lives on db01.
 containers, so apply changes with
 `docker compose -f docker-compose.aws.yml up -d --force-recreate`.
 
-**Never run `flask demo-data load` on a cloud server.** The demo accounts share a
-published password. If you load demo data to try things out, run
-`flask demo-data clear` before anyone real uses the site.
+**Demo data:** `flask demo-data load` adds sample entries from "past users"
+who can't sign in, so it's safe to use for a demo here. Run
+`flask demo-data clear` before real work starts, so sample entries don't mix
+with real ones.
 
 Start it and create your admin account. Use **the email address you'll use
 for AWS sign-in**:

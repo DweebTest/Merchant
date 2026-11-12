@@ -5,6 +5,12 @@
 
 Everything added is flagged is_demo, so `clear` never touches real data.
 Dates are relative to today, so the reports always look current.
+
+The sample entries are written by "past users": people who have left, whose
+accounts are deactivated and have no password. Nobody can sign in as them, so
+there are no shared logins. Their open follow-ups are waiting for whoever
+picks them up, which is the point of the demo: create your own accounts and
+work through them.
 """
 import random
 from datetime import date, timedelta
@@ -16,7 +22,6 @@ from .extensions import db
 from .models import (Attachment, Cluster, Contact, Entry, FollowUpStatus, Group, OpportunityType, Organization,
                      Priority, User)
 
-DEMO_PASSWORD = "Demo-pass-2026"
 DEMO_EMAIL_DOMAIN = "demo.example.com"
 
 GROUPS = {
@@ -157,7 +162,7 @@ def load_demo(entries=120, seed=2026, today=None):
     if not clusters or not types:
         raise click.ClickException("Run `flask seed` first to load clusters and opportunity types.")
 
-    counts = {"users": 0, "groups": 0, "organizations": 0, "contacts": 0, "entries": 0}
+    counts = {"users": 0, "groups": 0, "organizations": 0, "contacts": 0, "entries": 0, "open": 0}
 
     groups = {}
     for name, description in GROUPS.items():
@@ -174,9 +179,13 @@ def load_demo(entries=120, seed=2026, today=None):
         user = db.session.scalar(select(User).where(User.email == email))
         if user is None:
             user = User(email=email, display_name=display_name, is_demo=True)
-            user.set_password(DEMO_PASSWORD)
             db.session.add(user)
             counts["users"] += 1
+        if user.is_demo:
+            # A past user: no password and deactivated, so nobody can sign in as them.
+            user.password_hash = None
+            user.is_active_flag = False
+            user.must_change_password = False
         if groups[group_name] not in user.groups:
             user.groups.append(groups[group_name])
         users.append(user)
@@ -228,12 +237,13 @@ def load_demo(entries=120, seed=2026, today=None):
         description = rng.choice(templates).format(org=org_name)
         next_step = rng.choice(steps) or None
 
-        # Older items are mostly closed; recent ones mostly open.
-        closed_odds = 0.85 if days_ago > 120 else 0.27
+        # Older items are mostly closed; recent ones mostly open, left behind
+        # for the new team to follow up.
+        closed_odds = 0.75 if days_ago > 120 else 0.2
         status = rng.choice(closed_statuses if rng.random() < closed_odds else open_statuses)
         priority = rng.choices(priorities, priority_weights)[0]
         follow_up = None
-        if status.is_open and rng.random() < 0.7:
+        if status.is_open and rng.random() < 0.8:
             if days_ago > 45:
                 # Long-running items: a follow-up around now, a few overdue.
                 follow_up = today + timedelta(days=rng.randint(-14, 30))
@@ -259,6 +269,7 @@ def load_demo(entries=120, seed=2026, today=None):
         )
         db.session.add(entry)
         counts["entries"] += 1
+        counts["open"] += status.is_open
 
     db.session.commit()
     return counts
@@ -329,7 +340,8 @@ def register_demo_cli(app):
             f"Added {counts['entries']} entries, {counts['organizations']} organizations, "
             f"{counts['contacts']} contacts, {counts['users']} users and {counts['groups']} groups."
         )
-        click.echo(f"Demo users sign in as e.g. alex.morgan@{DEMO_EMAIL_DOMAIN} with password {DEMO_PASSWORD}")
+        click.echo(f"{counts['open']} follow-ups are still open. The entries were written by past users who")
+        click.echo("can't sign in; create your own accounts under Admin > Users to work through them.")
 
     @demo_data.command("clear")
     @click.confirmation_option(prompt="Remove all demo data? Your own data is not touched.")
