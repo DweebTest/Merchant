@@ -22,22 +22,29 @@ on your PC.
 
 ## What it costs
 
-New AWS accounts get up to US$200 in credits and a free plan that lasts up
-to 6 months ([AWS](https://aws.amazon.com/rds/free/)). This lab uses two small
-servers, two public IP addresses and 16 GB of disk, roughly US$20–30 a month,
-paid from those credits. IAM Identity Center has no charge of its own. The
+This lab uses two small servers, two public IP addresses and 16 GB of disk:
+roughly **US$25–30 a month** if they run all the time, or about **US$5–8 a
+month** if you pause them between sessions (see **Pausing the lab**). IAM
+Identity Center has no charge of its own. New AWS accounts may come with
+credits that cover this for a while; each person only gets those once. The
 **Clean up** section at the end removes everything.
 
 ## 1. Account and budget alert
 
-1. Create an account at <https://aws.amazon.com/> (choose the free plan if
-   offered). Turn on **MFA** for the root user when prompted, under
+1. Create the account with the classic sign-up page,
+   <https://portal.aws.amazon.com/billing/signup>, so you get a standalone
+   account that you fully own. Accounts made through the newer
+   **settings.aws.com** sign-up (with "Projects") sit inside an organization
+   AWS manages: IAM Identity Center is greyed out there, and some console
+   features fail with *"explicit deny in a service control policy"*.
+   Turn on **MFA** for the root user when prompted, under
    **Security credentials**.
 2. In the top-right region menu, pick one region and use it for everything,
    for example **Canada (Central) ca-central-1**.
 3. Search for **Billing and Cost Management → Budgets → Create budget**, choose
-   the **Monthly cost budget** template, set **US$10**, and enter your email.
-   AWS will email you if spending heads past that.
+   the **Monthly cost budget** template, set the most you're happy to spend
+   (for example **US$30**), and enter your email. AWS will email you if
+   spending heads past that.
 4. Don't use the root user day to day. Once Identity Center is on (step 6),
    give yourself an administrator permission set and sign in through the
    access portal instead. Keep the root password and MFA somewhere safe.
@@ -50,12 +57,16 @@ paid from those credits. IAM Identity Center has no charge of its own. The
 
 | Name | Inbound rules |
 |---|---|
-| `merchant-app` | HTTP 80 from Anywhere-IPv4; HTTPS 443 from Anywhere-IPv4; SSH 22 from **My IP** |
-| `merchant-db` | MySQL/Aurora 3306 from **`merchant-app`** (pick the security group as the source); NFS 2049 from **`merchant-app`**; SSH 22 from **My IP** |
+| `merchant-app` | HTTP 80 from Anywhere-IPv4; HTTPS 443 from Anywhere-IPv4; SSH 22 from **`ec2-instance-connect`** (see below) |
+| `merchant-db` | MySQL/Aurora 3306 from **`merchant-app`** (pick the security group as the source); NFS 2049 from **`merchant-app`**; SSH 22 from **`ec2-instance-connect`** |
 
-"Connect" in the console (EC2 Instance Connect) also needs SSH from AWS's
-connection service. If it says it can't connect, add an SSH rule whose
-source is the prefix list named `com.amazonaws.<region>.ec2-instance-connect`.
+You'll reach both servers through **Connect** in the console, which opens a
+terminal in your browser. That connection comes from AWS's own servers, not
+your PC, so the SSH rule's source must be AWS's connection service: in the
+Source box, start typing `ec2-instance-connect` and pick
+`com.amazonaws.<region>.ec2-instance-connect`. Without it, Connect fails with
+*"Error establishing SSH connection"*. (Ignore the console's AI "connection
+assistant"; you don't need it.)
 
 The database is never reachable from the internet. Only the app server can
 reach MySQL and the attachments share.
@@ -91,8 +102,10 @@ instead. In the steps below, **HOST** means this name.
 
 ## 4. Set up db01
 
-Select `merchant-db01` → **Connect** → **EC2 Instance Connect** → **Connect**.
-In the terminal that opens, run (use app01's *private* IP):
+Select `merchant-db01` → **Connect** → **EC2 Instance Connect** tab (username
+`ubuntu`) → **Connect**. A terminal opens in a new tab. To paste into it, use
+right-click → **Paste** or **Ctrl+Shift+V**. Run (use **app01's** *private* IP;
+the database will only accept connections from that address):
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/DweebTest/Merchant/main/deploy/aws/db-server-setup.sh
@@ -133,7 +146,10 @@ Only you should be able to read this file, since it holds the passwords:
 chmod 600 .env
 ```
 
-Fill in or change these lines (Ctrl+O, Enter to save, then Ctrl+X to exit):
+`nano` is a simple editor inside the terminal. Move with the arrow keys; press
+**Ctrl+W** and type a name such as `DB_HOST` to jump to that line; delete the
+old value with Backspace and paste the new one. Save with **Ctrl+O** then
+**Enter**, and exit with **Ctrl+X**. Fill in these lines:
 
 ```ini
 SECRET_KEY=<the long random string you just printed>
@@ -145,7 +161,18 @@ SITE_ADDRESS=HOST
 SAML_SP_BASE_URL=https://HOST
 ```
 
+* `DB_HOST` is **db01's private IP** (172.31…), never the sslip.io name.
+* `HOST` is **app01's** sslip.io name, from its Elastic IP.
+* No spaces, quotes or `#` at the start of these lines. A line starting with
+  `#` is ignored.
+
+Check your work with `grep -E "^(SECRET|DB_|SITE|SAML)" .env`.
+
 Leave `MYSQL_ROOT_PASSWORD` empty, because the database lives on db01.
+
+**Changed `.env` later?** Docker only reads it when it creates the
+containers, so apply changes with
+`docker compose -f docker-compose.aws.yml up -d --force-recreate`.
 
 **Never run `flask demo-data load` on a cloud server.** The demo accounts share a
 published password. If you load demo data to try things out, run
@@ -156,10 +183,14 @@ for AWS sign-in**:
 
 ```sh
 docker compose -f docker-compose.aws.yml up -d --build
+docker compose -f docker-compose.aws.yml logs app      # look for "Seed complete"
 docker compose -f docker-compose.aws.yml exec app flask create-admin
 ```
 
-Open **https://HOST**. The first visit can take a minute while Caddy gets the
+Run these from inside `~/Merchant` (each new terminal starts in your home
+folder, so `cd ~/Merchant` first).
+
+In your browser's address bar, open **https://HOST**. The first visit can take a minute while Caddy gets the
 HTTPS certificate. Sign in with your password and add an entry with an
 attachment. To prove the split works, connect to db01 and run
 `sudo ls /srv/merchant-files`. Your file is there.
@@ -252,13 +283,24 @@ tile in your AWS access portal.
   (**Actions → Security → Modify IAM role**).
 * **Reset an admin password:** `docker compose -f docker-compose.aws.yml exec app flask create-admin`
 
+## Pausing the lab
+
+Servers cost money only while they run. Between sessions, **EC2 →
+Instances**, select both → **Instance state → Stop**. To resume, select both →
+**Start**, wait two minutes, and open the site. Disks, the Elastic IP and your
+sslip.io name all stay the same, so nothing needs changing. Start db01 first if
+you start them one at a time.
+
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
 | Site doesn't load at all | `merchant-app` allows 80 and 443; the Elastic IP is attached; `docker compose -f docker-compose.aws.yml ps` |
-| Certificate error | SITE_ADDRESS matches the address bar exactly; `docker compose -f docker-compose.aws.yml logs proxy` |
-| "Waiting for the database" forever | DB_HOST is db01's **private** IP; `merchant-db` allows 3306 from `merchant-app`; db01's script ran without errors |
+| Certificate error or `ERR_SSL_PROTOCOL_ERROR` | SITE_ADDRESS matches the address bar exactly (app01's Elastic IP, dashes not dots); after fixing it, `up -d --force-recreate`; `docker compose -f docker-compose.aws.yml logs proxy` should say *certificate obtained successfully* |
+| `no such file` from `docker compose` | You're not in `~/Merchant`: run `cd ~/Merchant` |
+| Connect says *Error establishing SSH connection* | The security group's SSH rule must come from the `ec2-instance-connect` prefix list (step 2) |
+| *explicit deny in a service control policy*, or IAM Identity Center greyed out | The account came from the newer settings.aws.com sign-up; see step 1.1 |
+| "Waiting for the database" forever | DB_HOST is db01's **private** IP, and you ran `up -d --force-recreate` after changing it; `merchant-db` allows 3306 from `merchant-app`; db01's script ran without errors |
 | Attachments fail | `mount | grep merchant` on app01; `merchant-db` allows 2049 from `merchant-app` |
 | "Single sign-on couldn't be verified" | `docker compose ... logs app` shows the reason. Usually the ACS URL or audience in Identity Center doesn't match `https://HOST/...` exactly, or the metadata file is from a different app |
 | "isn't set up in Merchant yet" | The Merchant user's email must match the Identity Center user's email |
