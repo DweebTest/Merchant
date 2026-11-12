@@ -48,6 +48,26 @@
       {% if entry.contact.phone %}<br>{{ entry.contact.phone }}{% endif %}
     </dd>
     {% endif %}
+    <dt>Looked after by</dt>
+    <dd>
+      {{ entry.owner.display_name }}{% if not entry.owner.is_active %} <span class="tag off">former user</span>{% endif %}
+      {% if reassign_to %}
+      <form class="inline" method="post" action="{{ url_for('entries.reassign', entry_id=entry.id) }}">
+        {{ confirm_form.hidden_tag() }}
+        {% if reassign_to | length == 1 and reassign_to[0].id == current_user.id and not current_user.is_admin and entry.owner_id != current_user.id %}
+        <input type="hidden" name="owner" value="{{ current_user.id }}">
+        <button type="submit">Take this over</button>
+        {% else %}
+        <select name="owner" aria-label="Reassign to">
+          {% for u in reassign_to %}
+          <option value="{{ u.id }}"{% if u.id == current_user.id %} selected{% endif %}>{{ u.display_name }}{% if u.id == current_user.id %} (me){% endif %}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Reassign</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </dd>
     {% if entry.college_area %}<dt>College area</dt><dd>{{ entry.college_area }}</dd>{% endif %}
     {% if entry.link_url %}<dt>Link</dt><dd><a href="{{ entry.link_url }}" target="_blank" rel="noopener noreferrer">{{ entry.link_url | truncate(80) }}</a></dd>{% endif %}
     {% if entry.attachments %}

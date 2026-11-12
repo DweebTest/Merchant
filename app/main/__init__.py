@@ -38,7 +38,7 @@ def index():
                 Entry.priority_id.in_(high_ids), Entry.status_id.in_(open_ids)
             )
         ),
-        "mine": db.session.scalar(select(func.count(Entry.id)).where(Entry.created_by_id == current_user.id)),
+        "mine": db.session.scalar(select(func.count(Entry.id)).where(Entry.owner_id == current_user.id)),
     }
     return render_template("main/index.html", stats=stats, recent=recent, due=due,
                            open_ids=open_ids, high_ids=high_ids)

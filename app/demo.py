@@ -304,7 +304,8 @@ def clear_demo():
     db.session.flush()
 
     for user in db.session.scalars(select(User).where(User.is_demo.is_(True))):
-        in_use = db.session.scalar(select(func.count(Entry.id)).where(Entry.created_by_id == user.id))
+        in_use = db.session.scalar(select(func.count(Entry.id)).where(
+            (Entry.created_by_id == user.id) | (Entry.owner_id == user.id)))
         uploads = db.session.scalar(select(func.count(Attachment.id)).where(Attachment.uploaded_by_id == user.id))
         if in_use or uploads:
             counts["kept"] += 1

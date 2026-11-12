@@ -11,7 +11,7 @@
   <a class="stat" href="{{ url_for('entries.index') }}"><span class="num">{{ stats.entries }}</span><span>entries in total</span></a>
   <a class="stat" href="{{ url_for('entries.index', status=open_ids) }}"><span class="num">{{ stats.open }}</span><span>open follow-ups</span></a>
   <a class="stat" href="{{ url_for('entries.index', priority=high_ids, status=open_ids) }}"><span class="num">{{ stats.high }}</span><span>high priority, open</span></a>
-  <a class="stat" href="{{ url_for('entries.index', mine='1') }}"><span class="num">{{ stats.mine }}</span><span>added by you</span></a>
+  <a class="stat" href="{{ url_for('entries.index', mine='1') }}"><span class="num">{{ stats.mine }}</span><span>looked after by you</span></a>
 </div>
 
 {% if due %}

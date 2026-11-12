@@ -31,6 +31,7 @@ from ..models import (
     Organization,
     Priority,
     SavedFilter,
+    User,
     default_choice,
     entry_clusters,
     entry_opportunity_types,
@@ -51,7 +52,23 @@ DATE_PRESETS = {"7": "Last 7 days", "30": "Last 30 days", "90": "Last 90 days", 
 # --- Helpers ----------------------------------------------------------------
 
 def can_edit(entry):
-    return current_user.is_admin or entry.created_by_id == current_user.id
+    return current_user.is_admin or entry.owner_id == current_user.id
+
+
+def reassign_choices(entry):
+    """Who the current user may hand this entry to.
+
+    Administrators and the owner can pick anyone active. Anyone else can only
+    take over an entry whose owner has left (is deactivated)."""
+    if current_user.is_admin or entry.owner_id == current_user.id:
+        people = db.session.scalars(
+            select(User).where(User.is_active_flag.is_(True), User.id != entry.owner_id)
+            .order_by(func.lower(User.display_name))
+        ).all()
+        return people
+    if not entry.owner.is_active:
+        return [current_user._get_current_object()]
+    return []
 
 
 def _lookup_choices(model, keep_ids=()):
@@ -219,7 +236,7 @@ def build_filters(args):
     if args["priority"]:
         conds.append(Entry.priority_id.in_(args["priority"]))
     if args["mine"]:
-        conds.append(Entry.created_by_id == current_user.id)
+        conds.append(Entry.owner_id == current_user.id)
     return conds
 
 
@@ -341,7 +358,29 @@ def new():
 def detail(entry_id):
     entry = db.session.get(Entry, entry_id) or abort(404)
     return render_template("entries/detail.html", entry=entry, can_edit=can_edit(entry),
-                           confirm_form=ConfirmForm(), statuses=_lookup_choices(FollowUpStatus, [entry.status_id]))
+                           confirm_form=ConfirmForm(), statuses=_lookup_choices(FollowUpStatus, [entry.status_id]),
+                           reassign_to=reassign_choices(entry))
+
+
+@bp.route("/<int:entry_id>/owner", methods=["POST"])
+@login_required
+def reassign(entry_id):
+    """Hand an entry to someone else, or take over one left by a former user."""
+    entry = db.session.get(Entry, entry_id) or abort(404)
+    if not ConfirmForm().validate_on_submit():
+        abort(400)
+    try:
+        new_owner_id = int(request.form.get("owner", ""))
+    except ValueError:
+        new_owner_id = None
+    allowed = {u.id: u for u in reassign_choices(entry)}
+    if new_owner_id not in allowed:
+        abort(403)
+    entry.owner_id = new_owner_id
+    db.session.commit()
+    who = "you" if new_owner_id == current_user.id else allowed[new_owner_id].display_name
+    flash(f"This entry is now looked after by {who}.", "success")
+    return redirect(url_for("entries.detail", entry_id=entry.id))
 
 
 @bp.route("/<int:entry_id>/edit", methods=["GET", "POST"])
