@@ -25,15 +25,21 @@ always look current. Energy, Technology and Health Care come up more often
 in recent months, so the trends report has something to show.
 
 It also adds five groups (Advancement, Community Relations, Continuing
-Education, Applied Research, Leadership) and six contributors. They sign in
-with these emails and the password `Demo-pass-2026`:
+Education, Applied Research, Leadership) and six contributors (Alex Morgan,
+Priya Shah, Jordan Lee, Sam Okafor, Taylor Brooks and Chris Dubois).
 
-* alex.morgan@demo.example.com
-* priya.shah@demo.example.com
-* jordan.lee@demo.example.com
-* sam.okafor@demo.example.com
-* taylor.brooks@demo.example.com
-* chris.dubois@demo.example.com
+The contributors are **past users**: people who have left, so their accounts
+are deactivated and have no password. **Nobody can sign in as them**, so
+there are no shared demo logins to worry about. Their entries show
+"by Alex Morgan (former user)", and many of their follow-ups are still open
+or overdue, waiting for someone to pick them up.
+
+For a demo, create your own accounts under **Admin → Users** and work
+through those follow-ups. Anyone signed in can change an entry's follow-up
+status; editing a past user's entry needs an administrator.
+
+If you loaded demo data with an older version of Merchant (which had a shared
+password), running `flask demo-data load` again switches those logins off.
 
 Your own admin account and anything you've entered are left alone. If an
 organization you already entered has the same name as a demo one, the demo

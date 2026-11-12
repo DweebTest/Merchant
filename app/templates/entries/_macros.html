@@ -25,7 +25,7 @@
       <span>Follow up by {{ e.follow_up_date | shortdate }}</span>
     {% endif %}
     {% if e.attachments %}<span>📎 {{ e.attachments | length }}</span>{% endif %}
-    <span>by {{ e.created_by.display_name }}</span>
+    <span>by {{ e.created_by.display_name }}{% if not e.created_by.is_active %} (former user){% endif %}</span>
   </div>
 </article>
 {% endmacro %}

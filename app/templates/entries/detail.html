@@ -7,7 +7,7 @@
   <div class="head">
     <div>
       <h1>{{ entry.organization.name }}</h1>
-      <p class="muted">{{ entry.entry_date | longdate }} · added by {{ entry.created_by.display_name }}</p>
+      <p class="muted">{{ entry.entry_date | longdate }} · added by {{ entry.created_by.display_name }}{% if not entry.created_by.is_active %} (former user){% endif %}</p>
     </div>
     {% if can_edit %}<a class="button" href="{{ url_for('entries.edit', entry_id=entry.id) }}">Edit</a>{% endif %}
   </div>
