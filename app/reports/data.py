@@ -108,6 +108,7 @@ def _entries(*conditions, order=None):
             selectinload(Entry.clusters),
             selectinload(Entry.opportunity_types),
             selectinload(Entry.created_by),
+            selectinload(Entry.owner),
         )
         .order_by(*(order or (Entry.entry_date.desc(), Entry.id.desc())))
     )
@@ -376,10 +377,10 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
             _names(e.opportunity_types),
             e.priority.name,
             e.status.name,
-            e.created_by.display_name,
+            e.owner.display_name + ("" if e.owner.is_active else " (former user)"),
         ] for e in items]
 
-    columns = ["Follow up by", "Organization", "Next step", "Opportunity types", "Priority", "Status", "Added by"]
+    columns = ["Follow up by", "Organization", "Next step", "Opportunity types", "Priority", "Status", "Looked after by"]
     widths = [1.1, 1.7, 3.6, 1.9, 0.8, 1.0, 1.3]
     report.sections.append(Section("Overdue", columns, rows(overdue), widths=widths,
                                    empty_text="Nothing overdue."))

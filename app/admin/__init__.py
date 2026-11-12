@@ -2,7 +2,7 @@
 opportunity types, priorities and follow-up statuses)."""
 from functools import wraps
 
-from flask import Blueprint, abort, flash, redirect, render_template, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func, select
 
@@ -150,7 +150,41 @@ def user_edit(user_id):
             db.session.commit()
             flash(f"Saved {user.display_name}.", "success")
             return redirect(url_for("admin.users"))
-    return render_template("admin/user_form.html", form=form, user=user)
+    owned = db.session.scalar(select(func.count(Entry.id)).where(Entry.owner_id == user.id))
+    open_owned = db.session.scalar(select(func.count(Entry.id)).where(
+        Entry.owner_id == user.id, Entry.status.has(FollowUpStatus.is_open.is_(True))))
+    others = db.session.scalars(select(User).where(User.is_active_flag.is_(True), User.id != user.id)
+                                .order_by(func.lower(User.display_name))).all()
+    return render_template("admin/user_form.html", form=form, user=user, owned=owned, open_owned=open_owned,
+                           others=others, confirm_form=ConfirmForm())
+
+
+@bp.route("/users/<int:user_id>/reassign", methods=["POST"])
+@admin_required
+def user_reassign(user_id):
+    """Hand everything someone looks after to another person, e.g. when they leave."""
+    user = db.session.get(User, user_id) or abort(404)
+    if not ConfirmForm().validate_on_submit():
+        abort(400)
+    try:
+        target = db.session.get(User, int(request.form.get("owner", "")))
+    except ValueError:
+        target = None
+    if target is None or not target.is_active or target.id == user.id:
+        flash("Pick an active person to hand the entries to.", "error")
+        return redirect(url_for("admin.user_edit", user_id=user.id))
+    only_open = request.form.get("only_open") == "1"
+    q = select(Entry).where(Entry.owner_id == user.id)
+    if only_open:
+        q = q.where(Entry.status.has(FollowUpStatus.is_open.is_(True)))
+    moved = 0
+    for entry in db.session.scalars(q):
+        entry.owner_id = target.id
+        moved += 1
+    db.session.commit()
+    flash(f"Moved {moved} {'entry' if moved == 1 else 'entries'} from {user.display_name} to {target.display_name}.",
+          "success")
+    return redirect(url_for("admin.user_edit", user_id=user.id))
 
 
 # --- Groups -----------------------------------------------------------------

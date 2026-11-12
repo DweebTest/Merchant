@@ -26,6 +26,7 @@
     {% endif %}
     {% if e.attachments %}<span>📎 {{ e.attachments | length }}</span>{% endif %}
     <span>by {{ e.created_by.display_name }}{% if not e.created_by.is_active %} (former user){% endif %}</span>
+    {% if e.owner_id != e.created_by_id %}<span>looked after by {{ e.owner.display_name }}{% if not e.owner.is_active %} (former user){% endif %}</span>{% endif %}
   </div>
 </article>
 {% endmacro %}

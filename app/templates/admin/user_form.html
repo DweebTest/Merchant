@@ -17,4 +17,30 @@
     <button class="primary" type="submit">Save</button>
   </form>
 </div>
+{% if user and owned %}
+<div class="card">
+  <h2>Hand over their entries</h2>
+  <p class="muted">{{ user.display_name }} looks after {{ owned }} {{ 'entry' if owned == 1 else 'entries' }},
+    {{ open_owned }} with open follow-ups. Move them to someone else, for example when they leave.
+    The entries still show who added them.</p>
+  {% if others %}
+  <form method="post" action="{{ url_for('admin.user_reassign', user_id=user.id) }}"
+        data-confirm="Move {{ user.display_name }}'s entries?">
+    {{ confirm_form.hidden_tag() }}
+    <div class="field">
+      <label for="reassign-owner">Move to</label>
+      <select id="reassign-owner" name="owner">
+        {% for u in others %}<option value="{{ u.id }}">{{ u.display_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="check"><input type="checkbox" name="only_open" value="1" checked> Only entries with open follow-ups</label>
+    </div>
+    <button type="submit">Move entries</button>
+  </form>
+  {% else %}
+  <p>Add another active user first.</p>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}

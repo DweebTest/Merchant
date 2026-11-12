@@ -241,6 +241,9 @@ class Entry(db.Model):
     priority_id = db.Column(db.Integer, db.ForeignKey("priorities.id", ondelete="RESTRICT"), nullable=False, index=True)
     follow_up_date = db.Column(db.Date, index=True)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    # Who looks after this entry now: edits it and follows it up. Starts as
+    # whoever added it; can be reassigned, for example when someone leaves.
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
     # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
     is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
@@ -248,7 +251,8 @@ class Entry(db.Model):
 
     organization = db.relationship("Organization", back_populates="entries")
     contact = db.relationship("Contact")
-    created_by = db.relationship("User")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+    owner = db.relationship("User", foreign_keys=[owner_id])
     clusters = db.relationship("Cluster", secondary=entry_clusters, order_by="Cluster.sort_order")
     opportunity_types = db.relationship("OpportunityType", secondary=entry_opportunity_types, order_by="OpportunityType.sort_order")
     attachments = db.relationship("Attachment", back_populates="entry", cascade="all, delete-orphan")
@@ -295,7 +299,9 @@ class SavedFilter(db.Model):
 
 @event.listens_for(Entry, "before_insert")
 def _entry_defaults(mapper, connection, entry):
-    """Fill in the default status and priority when none was chosen."""
+    """Fill in the owner, status and priority when none was given."""
+    if entry.owner_id is None and entry.owner is None:
+        entry.owner_id = entry.created_by_id if entry.created_by_id is not None else entry.created_by.id
     for col, model in (("status_id", FollowUpStatus), ("priority_id", Priority)):
         if getattr(entry, col) is None:
             rel = entry.status if col == "status_id" else entry.priority
