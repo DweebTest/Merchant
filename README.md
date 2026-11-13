@@ -103,7 +103,7 @@ ask an administrator. Each user's sign-in method is either *Merchant password
 ## Entry shortcuts
 
 * Picking an organization that already has entries on **New entry** fills in
-  its clusters, opportunity types, contact, college area and link from its most
+  its clusters, opportunity types, contact, area impacted and link from its most
   recent entry. Those sections are locked (greyed out) until you press **Edit**.
 * On the **Knowledge base**, any set of filters can be saved with a name, either
   just for you or shared with everyone. Saved filters appear as buttons above

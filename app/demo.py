@@ -78,7 +78,7 @@ NOTES = {
     "Potential donor": (
         ["{org}'s board chair mentioned they are setting up a scholarship fund and asked how named awards work.",
          "At the gala, {org} signalled interest in a multi-year gift toward the new skills centre.",
-         "{org} is reviewing its community giving priorities for next year and the college came up."],
+         "{org} is reviewing its community giving priorities for next year and we came up."],
         ["Advancement to send the named-award options.", "Arrange a campus tour for the board chair.",
          "Prepare a short case for support."]),
     "Potential sponsor": (
@@ -111,13 +111,13 @@ NOTES = {
          "{org} mentioned supply-chain delays are pushing them to source and train locally."],
         ["Share with program heads.", "Raise at the next leadership meeting.", ""]),
     "Engagement event": (
-        ["Met {org} at the chamber breakfast; they want to stay connected with the college.",
-         "{org} invited the college to speak at their annual member forum.",
+        ["Met {org} at the chamber breakfast; they want to stay connected with us.",
+         "{org} invited us to speak at their annual member forum.",
          "Hosted {org} for a campus tour of the trades building."],
         ["Add to the newsletter list.", "Confirm a speaker for the forum.", "Send a thank-you note."]),
     "Government relations opportunity": (
         ["{org} is consulting on a regional workforce strategy and wants post-secondary input.",
-         "{org} flagged an upcoming funding announcement relevant to the college's capital plan.",
+         "{org} flagged an upcoming funding announcement relevant to our capital plan.",
          "Staff at {org} asked for data on graduate employment in the region."],
         ["Leadership to submit a response to the consultation.", "Brief the president.",
          "Institutional research to pull graduate outcomes."]),
