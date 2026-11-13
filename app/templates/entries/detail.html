@@ -7,7 +7,7 @@
   <div class="head">
     <div>
       <h1>{{ entry.organization.name }}</h1>
-      <p class="muted">{{ entry.entry_date | longdate }} · added by {{ entry.created_by.display_name }}{% if not entry.created_by.is_active %} (former user){% endif %}</p>
+      <p class="muted">{{ entry.entry_date | longdate }} · added by {{ entry.author_name }}{% if entry.author_gone %} (former user){% endif %}</p>
     </div>
     {% if can_edit %}<a class="button" href="{{ url_for('entries.edit', entry_id=entry.id) }}">Edit</a>{% endif %}
   </div>
@@ -50,7 +50,8 @@
     {% endif %}
     <dt>Looked after by</dt>
     <dd>
-      {{ entry.owner.display_name }}{% if not entry.owner.is_active %} <span class="tag off">former user</span>{% endif %}
+      {% if entry.owner %}{{ entry.owner.display_name }}{% if not entry.owner.is_active %} <span class="tag off">former user</span>{% endif %}
+      {% else %}<span class="muted">Nobody (their account was deleted)</span>{% endif %}
       {% if reassign_to %}
       <form class="inline" method="post" action="{{ url_for('entries.reassign', entry_id=entry.id) }}">
         {{ confirm_form.hidden_tag() }}

@@ -122,6 +122,8 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.String(255))
+    # Inactive groups are hidden when choosing someone's groups, but kept.
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
     is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
@@ -240,10 +242,13 @@ class Entry(db.Model):
     status_id = db.Column(db.Integer, db.ForeignKey("follow_up_statuses.id", ondelete="RESTRICT"), nullable=False, index=True)
     priority_id = db.Column(db.Integer, db.ForeignKey("priorities.id", ondelete="RESTRICT"), nullable=False, index=True)
     follow_up_date = db.Column(db.Date, index=True)
-    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    # Who added it. The name is kept too, so it still shows after their account is deleted.
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_by_name = db.Column(db.String(200), nullable=False, default="", server_default="")
     # Who looks after this entry now: edits it and follows it up. Starts as
     # whoever added it; can be reassigned, for example when someone leaves.
-    owner_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    # Empty once that person's account is deleted (only allowed when the entry is done).
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
     # Marks sample data loaded by `flask demo-data load`, so it can be removed cleanly.
     is_demo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false(), index=True)
@@ -258,6 +263,19 @@ class Entry(db.Model):
     attachments = db.relationship("Attachment", back_populates="entry", cascade="all, delete-orphan")
     status = db.relationship("FollowUpStatus", lazy="joined")
     priority = db.relationship("Priority", lazy="joined")
+
+    @property
+    def author_name(self):
+        return self.created_by.display_name if self.created_by else (self.created_by_name or "Unknown")
+
+    @property
+    def author_gone(self):
+        """True when whoever added it has left (deactivated or deleted)."""
+        return self.created_by is None or not self.created_by.is_active
+
+    @property
+    def owner_gone(self):
+        return self.owner is None or not self.owner.is_active
 
     __table_args__ = (
         # Keyword search across the text fields (MySQL FULLTEXT; ignored elsewhere).
@@ -275,7 +293,7 @@ class Attachment(db.Model):
     stored_filename = db.Column(db.String(255), nullable=False, unique=True)
     content_type = db.Column(db.String(150))
     size_bytes = db.Column(db.BigInteger, nullable=False, default=0)
-    uploaded_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    uploaded_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
     uploaded_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     entry = db.relationship("Entry", back_populates="attachments")
@@ -299,9 +317,14 @@ class SavedFilter(db.Model):
 
 @event.listens_for(Entry, "before_insert")
 def _entry_defaults(mapper, connection, entry):
-    """Fill in the owner, status and priority when none was given."""
-    if entry.owner_id is None and entry.owner is None:
-        entry.owner_id = entry.created_by_id if entry.created_by_id is not None else entry.created_by.id
+    """Fill in the author's name, owner, status and priority when none was given."""
+    author_id = entry.created_by.id if entry.created_by is not None else entry.created_by_id
+    if author_id is not None and not entry.created_by_name:
+        u = User.__table__
+        entry.created_by_name = connection.execute(
+            select(u.c.display_name).where(u.c.id == author_id)).scalar() or ""
+    if entry.owner_id is None and entry.owner is None and author_id is not None:
+        entry.owner_id = author_id
     for col, model in (("status_id", FollowUpStatus), ("priority_id", Priority)):
         if getattr(entry, col) is None:
             rel = entry.status if col == "status_id" else entry.priority

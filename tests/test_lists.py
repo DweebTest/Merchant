@@ -66,7 +66,7 @@ def test_used_value_cannot_be_deleted_but_can_be_retired(admin_client):
     in_progress = _get(FollowUpStatus, "In progress")
     admin_client.post(f"/admin/lists/statuses/{in_progress.id}/delete")
     assert _get(FollowUpStatus, "In progress") is not None
-    assert b"can&#39;t be deleted" in admin_client.get(f"/admin/lists/statuses/{in_progress.id}").data
+    assert b"once those open follow-ups are marked done" in admin_client.get(f"/admin/lists/statuses/{in_progress.id}").data
 
     save(admin_client, "statuses", in_progress.id, name="In progress", is_open="y", colour="blue", is_active="")
     db.session.refresh(in_progress)

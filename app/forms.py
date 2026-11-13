@@ -69,6 +69,8 @@ class GroupForm(FlaskForm):
     name = StringField("Group name", validators=[DataRequired(), Length(max=100)])
     description = StringField("Description", validators=[Optional(), Length(max=255)])
     members = MultiCheckboxField("Members", coerce=int)
+    is_active = BooleanField("Active", default=True,
+                             description="Inactive groups keep their members but aren't offered for new ones.")
     submit = SubmitField("Save")
 
 

@@ -156,7 +156,7 @@ def recent_report(date_from, date_to, cluster_ids):
     report.summary = [
         ("Entries", len(entries)),
         ("Organizations", len({e.organization_id for e in entries})),
-        ("Contributors", len({e.created_by_id for e in entries})),
+        ("Contributors", len({e.created_by_id or e.author_name for e in entries})),
         ("Open follow-ups", sum(e.status.is_open for e in entries)),
     ]
 
@@ -377,7 +377,7 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
             _names(e.opportunity_types),
             e.priority.name,
             e.status.name,
-            e.owner.display_name + ("" if e.owner.is_active else " (former user)"),
+            (e.owner.display_name + ("" if e.owner.is_active else " (former user)")) if e.owner else "Nobody",
         ] for e in items]
 
     columns = ["Follow up by", "Organization", "Next step", "Opportunity types", "Priority", "Status", "Looked after by"]
