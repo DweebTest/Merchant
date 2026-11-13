@@ -1,11 +1,11 @@
 # Signing in with Microsoft (Entra ID)
 
 Merchant can show a **Sign in with Microsoft** button so staff use their
-college account instead of a separate password. Only people an admin has
+work account instead of a separate password. Only people an admin has
 already added in Merchant can sign in this way. Nobody gets an account just by
-having a college login.
+having a login in your organization.
 
-There are two parts: IT registers Merchant in the college's Microsoft tenant
+There are two parts: IT registers Merchant in your organization's Microsoft tenant
 (about 10 minutes), then you copy three values into Merchant's `.env`.
 
 ## Part 1: what to ask IT for
@@ -56,14 +56,14 @@ doesn't match, either set `TRUSTED_PROXIES=1` (see
 [split-servers.md](split-servers.md#3-https)) or spell it out:
 
 ```ini
-ENTRA_REDIRECT_URI=https://merchant.yourcollege.edu/login/microsoft/callback
+ENTRA_REDIRECT_URI=https://merchant.example.org/login/microsoft/callback
 ```
 
 It must match the redirect URI in the app registration exactly.
 
 ## Adding people
 
-Under **Admin → Users → Add user**, enter the person's college email address
+Under **Admin → Users → Add user**, enter the person's work email address
 (the one they sign in to Microsoft with) and pick a **Sign-in method**:
 
 * **Merchant password (and single sign-on, if it's set up)**: the person gets a
@@ -100,11 +100,11 @@ secret, replace `ENTRA_CLIENT_SECRET` in `.env` and restart. If it does
 expire, the Microsoft button shows "Microsoft sign-in didn't work" and password
 sign-in still works (unless you turned it off).
 
-## Testing without the college tenant
+## Testing without your organization's tenant
 
 Microsoft's free developer sandbox now requires a qualifying paid subscription,
 and new standalone tenants usually need a paid Azure subscription or a credit
 card. The simplest route is asking IT to create the app registration in the
-college tenant with **Assignment required** on and only you assigned, plus the
+organization's tenant with **Assignment required** on and only you assigned, plus the
 `http://localhost:8000/login/microsoft/callback` redirect so you can test from
 Docker on your own machine.

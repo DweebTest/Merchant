@@ -97,7 +97,7 @@ for example `15.222.10.20`.
 Your site's name is that address with dashes, followed by `.sslip.io`, for
 example **`15-222-10-20.sslip.io`**. sslip.io is a free service that points
 such names at the address inside them, which lets HTTPS work without
-buying a domain. If the college gives you a real name later, use that
+buying a domain. If you get a real domain name later, use that
 instead. In the steps below, **HOST** means this name.
 
 ## 4. Set up db01

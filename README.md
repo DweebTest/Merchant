@@ -81,7 +81,7 @@ Identity Center.
 * **Admins** manage users, groups and the cluster and opportunity type lists.
 * **Contributors** add and search entries. They can edit or delete their own
   entries, and anyone can update an entry's follow-up status.
-* **Groups** organize people (for example Advancement or Applied Research).
+* **Groups** organize people (for example Partnerships or Research).
   Each group can later be granted permissions for specific functions. The
   tables for this exist now, and `User.has_permission()` is the check to use,
   but nothing is restricted by group yet.

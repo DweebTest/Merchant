@@ -45,10 +45,10 @@ Everyone has to sign in again once after this update.
 * **A captured SAML response could be replayed** within its few-minute
   lifetime. That needs someone to intercept HTTPS traffic first.
 * **Traffic between the servers isn't encrypted** (MySQL and NFS). That's
-  fine inside one AWS VPC. On the college network, consider MySQL over TLS.
+  fine inside one AWS VPC. On your own network, consider MySQL over TLS.
 * **The local `docker-compose.yml` listens on all network interfaces** on
   port 8000. Fine on a laptop. Don't use that file on a shared server.
-* **sslip.io** is a free third-party name service. Use a real college domain
+* **sslip.io** is a free third-party name service. Use a real domain
   for anything beyond the lab.
 
 ## Before going live
