@@ -8,13 +8,14 @@
 <p class="muted">Groups organize people now. Later they can be given permissions for specific functions.</p>
 {% if groups %}
 <div class="table-wrap"><table>
-  <thead><tr><th>Group</th><th>Description</th><th>Members</th><th></th></tr></thead>
+  <thead><tr><th>Group</th><th>Description</th><th>Members</th><th>Status</th><th></th></tr></thead>
   <tbody>
   {% for g in groups %}
     <tr>
       <td><a href="{{ url_for('admin.group_edit', group_id=g.id) }}">{{ g.name }}</a></td>
       <td>{{ g.description or '' }}</td>
       <td>{{ g.members | length }}</td>
+      <td>{% if g.is_active %}<span class="tag on">Active</span>{% else %}<span class="tag off">Inactive</span>{% endif %}</td>
       <td class="right">
         <form method="post" action="{{ url_for('admin.group_delete', group_id=g.id) }}"
               data-confirm="Delete this group? Members keep their accounts.">

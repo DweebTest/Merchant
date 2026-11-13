@@ -7,8 +7,8 @@
   <h1>{{ spec.label }}</h1>
   <a class="button primary" href="{{ url_for('admin.lookup_edit', kind=kind) }}">Add {{ spec.singular }}</a>
 </div>
-<p class="muted">{{ spec.help }} Values nobody has used yet can be deleted. Untick <em>Active</em> to retire one
-  that's in use: it disappears from the entry form, and entries that already have it keep it.</p>
+<p class="muted">{{ spec.help }} Untick <em>Active</em> to retire a value: it disappears from the entry form,
+  and entries that already have it keep it. A value can be deleted once every entry using it is marked done.</p>
 <div class="table-wrap"><table>
   <thead><tr><th>Name</th><th>Sort order</th><th>Used by</th>
     {% if kind == 'types' %}<th>Report</th>{% endif %}
@@ -29,9 +29,9 @@
       {% if spec.single %}<td>{{ 'Default' if r.is_default else '' }}</td>{% endif %}
       <td>{% if r.is_active %}<span class="tag on">Active</span>{% else %}<span class="tag off">Inactive</span>{% endif %}</td>
       <td class="right">
-        {% if not used and not r.is_default %}
+        {% if not open_usage.get(r.id) and not r.is_default %}
         <form method="post" action="{{ url_for('admin.lookup_delete', kind=kind, item_id=r.id) }}"
-              data-confirm="Delete {{ r.name }}?">
+              data-confirm="Delete {{ r.name }}?{% if used %} {{ used }} finished {{ 'entry uses' if used == 1 else 'entries use' }} it.{% endif %}">
           {{ confirm_form.hidden_tag() }}
           <button class="link danger" type="submit">Delete</button>
         </form>

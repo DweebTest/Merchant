@@ -5,6 +5,12 @@
   <h1>Users</h1>
   <a class="button primary" href="{{ url_for('admin.user_new') }}">Add user</a>
 </div>
+{% if inactive %}
+<p class="muted">
+  {% if show_all %}Showing everyone, including {{ inactive }} inactive. <a href="{{ url_for('admin.users') }}">Hide inactive</a>
+  {% else %}{{ inactive }} inactive {{ 'person is' if inactive == 1 else 'people are' }} hidden. <a href="{{ url_for('admin.users', show='all') }}">Show everyone</a>{% endif %}
+</p>
+{% endif %}
 <div class="table-wrap"><table>
   <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Groups</th><th>Status</th><th>Last sign-in</th></tr></thead>
   <tbody>

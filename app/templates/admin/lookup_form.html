@@ -19,11 +19,20 @@
   {% if item %}
   <hr>
   {% if used %}
-  <p class="muted">Used by {{ used }} {{ 'entry' if used == 1 else 'entries' }}. Renaming changes it on all of them.
-    To stop people choosing it, untick Active.</p>
-  {% elif not item.is_default %}
+  <p class="muted">Used by {{ used }} {{ 'entry' if used == 1 else 'entries' }}{% if open_used %}, {{ open_used }} still open{% endif %}.
+    Renaming changes it on all of them. To stop people choosing it, untick Active.</p>
+  {% endif %}
+  {% if item.is_default %}
+  <p class="muted">This is the default for new entries, so it can't be deleted.</p>
+  {% elif open_used %}
+  <p class="muted">It can be deleted once those open follow-ups are marked done.</p>
+  {% else %}
+  {% if used %}<p class="muted">Deleting it
+    {% if kind in ('clusters', 'types') %}takes it off those finished entries.
+    {% elif kind == 'priorities' %}moves those entries to the default priority.
+    {% else %}moves those entries to another finished status.{% endif %}</p>{% endif %}
   <form method="post" action="{{ url_for('admin.lookup_delete', kind=kind, item_id=item.id) }}"
-        data-confirm="Delete {{ item.name }}?">
+        data-confirm="Delete {{ item.name }}? This can't be undone.">
     {{ confirm_form.hidden_tag() }}
     <button class="danger" type="submit">Delete {{ spec.singular }}</button>
   </form>

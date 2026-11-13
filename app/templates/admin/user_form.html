@@ -43,4 +43,22 @@
   {% endif %}
 </div>
 {% endif %}
+{% if user and not is_self %}
+<div class="card">
+  <h2>Delete this account</h2>
+  <p class="muted">To keep someone who may come back, untick <em>Active</em> instead. Deleting removes the account
+    for good. Entries they added keep their name.</p>
+  {% if open_owned %}
+  <p>{{ user.display_name }} still looks after {{ open_owned }} open
+    {{ 'follow-up' if open_owned == 1 else 'follow-ups' }}. Mark {{ 'it' if open_owned == 1 else 'them' }} done or hand
+    {{ 'it' if open_owned == 1 else 'them' }} over above, then you can delete the account.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('admin.user_delete', user_id=user.id) }}"
+        data-confirm="Delete {{ user.display_name }}'s account for good? This can't be undone.">
+    {{ confirm_form.hidden_tag() }}
+    <button class="danger" type="submit">Delete account</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}

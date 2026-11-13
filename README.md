@@ -90,6 +90,20 @@ New users get a temporary password and must choose their own at first
 sign-in. After five wrong passwords an account is locked for 15 minutes
 (both adjustable in `.env`).
 
+### Making people and groups inactive, or deleting them
+
+* **Inactive** is for someone who's away and coming back. They can't sign in,
+  but their account, groups and entries stay as they are. Untick **Active** on
+  their user page. Inactive people are hidden from the Users page unless you
+  click **Show everyone**.
+* **Delete** removes the account for good. It's allowed once every entry the
+  person looks after is marked done (or handed to someone else with
+  Reassign). Entries they added still show their name, marked
+  "(former user)", and an entry they looked after shows "Nobody" until
+  someone takes it over. You can't delete yourself or the last admin.
+* **Groups** can be made inactive (members keep it, but it isn't offered for
+  new people) or deleted (members just lose that group).
+
 ## Signing in with Microsoft
 
 Once IT registers Merchant in Microsoft Entra ID and you put three values in
@@ -142,8 +156,17 @@ as a PDF, for any date range and set of clusters:
 
 Administrators edit the choices people pick from under **Lists**: economic
 clusters, opportunity types, priorities and follow-up statuses. Each can be
-added, renamed, reordered (sort order) or retired. A value nobody has used
-can be deleted; one that's in use is retired instead, so old entries keep it.
+added, renamed, reordered (sort order), retired (untick **Active**) or
+deleted. Retired values stay on old entries but aren't offered for new ones.
+
+A value can be deleted once every entry using it is marked done:
+
+* An economic cluster or opportunity type is removed from those entries.
+* A priority's entries move to the default priority.
+* A finished status's entries move to another finished status (such as Done).
+
+The default priority and status can't be deleted; make another one the
+default first.
 
 Priorities and statuses carry a meaning the app relies on:
 

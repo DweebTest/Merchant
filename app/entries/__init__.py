@@ -66,7 +66,7 @@ def reassign_choices(entry):
             .order_by(func.lower(User.display_name))
         ).all()
         return people
-    if not entry.owner.is_active:
+    if entry.owner_gone:
         return [current_user._get_current_object()]
     return []
 
