@@ -121,7 +121,7 @@ class EntryForm(FlaskForm):
     clusters = MultiCheckboxField("Economic clusters", coerce=int, validators=[at_least_one])
     opportunity_types = MultiCheckboxField("Opportunity types", coerce=int, validators=[at_least_one])
     next_step = TextAreaField("Suggested next step", validators=[Optional(), Length(max=5000)])
-    college_area = StringField("College area impacted", validators=[Optional(), Length(max=150)])
+    college_area = StringField("Area impacted", validators=[Optional(), Length(max=150)])
     # Choices come from the admin-editable lists (set in the view).
     priority_id = SelectField("Priority", coerce=int, validate_choice=True)
     status_id = SelectField("Follow-up status", coerce=int, validate_choice=True)

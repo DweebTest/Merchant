@@ -25,8 +25,8 @@ service from `docker-compose.yml`). Then, as the MySQL root user:
 ```sql
 CREATE DATABASE merchant CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- Allow the Merchant user to connect only from the app server.
-CREATE USER 'merchant'@'app01.yourcollege.edu' IDENTIFIED BY 'a-long-password';
-GRANT ALL ON merchant.* TO 'merchant'@'app01.yourcollege.edu';
+CREATE USER 'merchant'@'app01.example.org' IDENTIFIED BY 'a-long-password';
+GRANT ALL ON merchant.* TO 'merchant'@'app01.example.org';
 ```
 
 You can use the app server's IP address instead of its name, for example
@@ -85,7 +85,7 @@ install -r requirements.txt`). In `.env` on app01:
 
 ```ini
 SECRET_KEY=<long random string>
-DB_HOST=db01.yourcollege.edu
+DB_HOST=db01.example.org
 DB_PORT=3306
 DB_NAME=merchant
 DB_USER=merchant
@@ -126,7 +126,7 @@ An nginx example:
 ```nginx
 server {
     listen 443 ssl;
-    server_name merchant.yourcollege.edu;
+    server_name merchant.example.org;
     ssl_certificate     /etc/ssl/merchant.crt;
     ssl_certificate_key /etc/ssl/merchant.key;
     client_max_body_size 30m;            # a bit above MAX_UPLOAD_MB
@@ -157,7 +157,7 @@ Merchant without a proxy, because otherwise anyone could fake those headers.
 
 ## 4. Check it works
 
-1. Open `https://merchant.yourcollege.edu` and sign in.
+1. Open `https://merchant.example.org` and sign in.
 2. Add an entry with an attachment, then confirm the file appears in the share
    on db01.
 3. If Microsoft sign-in is set up, try the Microsoft button
@@ -184,5 +184,5 @@ mysqldump --single-transaction --routines merchant > merchant-YYYY-MM-DD.sql
 
 On Windows, schedule this with Task Scheduler, and copy the attachments folder
 alongside it with `robocopy D:\MerchantFiles <backup location> /MIR`. The
-college's normal server backups can also cover both. Restoring is described in
+organization's normal server backups can also cover both. Restoring is described in
 [data-management.md](data-management.md).

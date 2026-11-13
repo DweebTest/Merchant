@@ -17,7 +17,7 @@ nothing behind.
 3. Open **Docker Desktop**. You can skip signing in. Wait until the bottom-left
    corner says **Engine running**.
 
-> On a college-managed computer you may need IT to install Docker Desktop
+> On a work-managed computer you may need IT to install Docker Desktop
 > for you, because it needs administrator rights.
 
 ## 2. Download the Merchant code

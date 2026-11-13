@@ -81,7 +81,7 @@ Identity Center.
 * **Admins** manage users, groups and the cluster and opportunity type lists.
 * **Contributors** add and search entries. They can edit or delete their own
   entries, and anyone can update an entry's follow-up status.
-* **Groups** organize people (for example Advancement or Applied Research).
+* **Groups** organize people (for example Partnerships or Research).
   Each group can later be granted permissions for specific functions. The
   tables for this exist now, and `User.has_permission()` is the check to use,
   but nothing is restricted by group yet.
@@ -103,7 +103,7 @@ ask an administrator. Each user's sign-in method is either *Merchant password
 ## Entry shortcuts
 
 * Picking an organization that already has entries on **New entry** fills in
-  its clusters, opportunity types, contact, college area and link from its most
+  its clusters, opportunity types, contact, area impacted and link from its most
   recent entry. Those sections are locked (greyed out) until you press **Edit**.
 * On the **Knowledge base**, any set of filters can be saved with a name, either
   just for you or shared with everyone. Saved filters appear as buttons above

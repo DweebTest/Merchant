@@ -68,7 +68,7 @@
       </form>
       {% endif %}
     </dd>
-    {% if entry.college_area %}<dt>College area</dt><dd>{{ entry.college_area }}</dd>{% endif %}
+    {% if entry.college_area %}<dt>Area impacted</dt><dd>{{ entry.college_area }}</dd>{% endif %}
     {% if entry.link_url %}<dt>Link</dt><dd><a href="{{ entry.link_url }}" target="_blank" rel="noopener noreferrer">{{ entry.link_url | truncate(80) }}</a></dd>{% endif %}
     {% if entry.attachments %}
     <dt>Attachments</dt>
