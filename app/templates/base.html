@@ -23,9 +23,7 @@
 ] -%}
 {%- if current_user.is_authenticated and current_user.is_admin -%}
 {%- set nav = nav + [
-  (url_for('admin.users'), 'Users', ep.startswith('admin.user')),
-  (url_for('admin.groups'), 'Groups', ep.startswith('admin.group')),
-  (url_for('admin.lists'), 'Lists', ep == 'admin.lists' or ep.startswith('admin.lookup')),
+  (url_for('admin.index'), 'Configuration', bp == 'admin'),
 ] -%}
 {%- endif -%}
 {%- set here = request.full_path if request.method == 'GET' else None -%}

@@ -84,7 +84,7 @@ def test_trends_compares_with_previous_period(sample):
     health = next(row for row in _rows(r, "Activity by economic cluster") if row[0] == "Health Care")
     assert health[1:] == [1, 0, "new"]
     assert _rows(r, "Organizations mentioned more than once")[0][0] == "Prairie Wind"
-    assert any(s.heading == "Entries per month by cluster" for s in r.sections)
+    assert any(s.heading == "Entries per month by economic cluster" for s in r.sections)
 
 
 def test_funding_uses_report_groups(sample):

@@ -24,7 +24,7 @@
   <label class="small">To <input type="date" name="to" value="{{ request.args.get('to', '') }}" data-clears="range"></label>
   {% endif %}
   <details class="cluster-pick">
-    <summary>Clusters{% if cluster_ids %} ({{ cluster_ids|length }}){% else %} (all){% endif %}</summary>
+    <summary>{{ L.clusters }}{% if cluster_ids %} ({{ cluster_ids|length }}){% else %} (all){% endif %}</summary>
     <div class="cluster-options">
       {% for c in clusters %}
       <label class="check"><input type="checkbox" name="cluster" value="{{ c.id }}" {% if c.id in cluster_ids %}checked{% endif %}> {{ c.name }}</label>

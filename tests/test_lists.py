@@ -32,7 +32,7 @@ def test_lists_overview_shows_all_four(admin_client):
     html = admin_client.get("/admin/lists").data.decode()
     for label in ("Economic clusters", "Opportunity types", "Priorities", "Follow-up statuses"):
         assert label in html
-    assert "No action needed" in html and "Lists" in admin_client.get("/").data.decode()
+    assert "No action needed" in html and "Configuration" in admin_client.get("/").data.decode()
 
 
 def test_new_default_priority_replaces_old_and_is_preselected(admin_client):

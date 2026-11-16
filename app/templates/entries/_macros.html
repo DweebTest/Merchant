@@ -4,8 +4,8 @@
 
 {#- The default priority isn't shown, to keep cards quiet. -#}
 {% macro priority_tag(priority) -%}
-  {% if priority.is_high %}<span class="tag prio-high">{{ priority.name }} priority</span>
-  {% elif not priority.is_default %}<span class="tag off">{{ priority.name }} priority</span>{% endif %}
+  {% if priority.is_high %}<span class="tag prio-high">{{ priority.name }} {{ labels().lc('priority') }}</span>
+  {% elif not priority.is_default %}<span class="tag off">{{ priority.name }} {{ labels().lc('priority') }}</span>{% endif %}
 {%- endmacro %}
 
 {% macro entry_card(e) %}

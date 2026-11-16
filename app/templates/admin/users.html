@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Users{% endblock %}
 {% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Configuration</a></p>
 <div class="head">
   <h1>Users</h1>
   <a class="button primary" href="{{ url_for('admin.user_new') }}">Add user</a>

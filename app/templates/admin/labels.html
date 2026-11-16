@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Labels{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Configuration</a></p>
+<div class="head">
+  <h1>Labels</h1>
+</div>
+<p class="muted">What Merchant calls its lists and the {{ L.lc('area') }} field, on every page, in search and in the reports.
+  Change them if you use Merchant to track something other than market intelligence, then edit the values themselves
+  under <a href="{{ url_for('admin.lists') }}">Lists</a>. Leave a box empty to use the default shown in it.</p>
+<form method="post" class="card narrow">
+  {{ form.hidden_tag() }}
+  {% for title, keys in groups %}
+  <fieldset class="label-group">
+    <legend>{{ title }}</legend>
+    {% for key in keys %}
+    {% set value = current[key] %}
+    <div class="field">
+      <label for="label-{{ key }}">{{ fields[key][0] }}</label>
+      <input type="text" id="label-{{ key }}" name="{{ key }}" maxlength="60"
+             value="{{ value if value != fields[key][1] else '' }}" placeholder="{{ fields[key][1] }}">
+    </div>
+    {% endfor %}
+  </fieldset>
+  {% endfor %}
+  <div class="actions">
+    <button class="primary" type="submit">Save labels</button>
+    <button type="submit" name="reset" value="1" data-confirm="Put every label back to its default?">Reset to defaults</button>
+  </div>
+</form>
+{% endblock %}

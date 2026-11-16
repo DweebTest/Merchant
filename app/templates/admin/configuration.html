@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Configuration{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Configuration</h1>
+</div>
+<p class="muted">Everything an administrator can set up. Only administrators see this page.</p>
+<div class="list-cards">
+  <section class="card list-card">
+    <div class="head">
+      <h2><a href="{{ url_for('admin.users') }}">Users</a></h2>
+      <span class="muted">{{ users }} active{% if users_all > users %}, {{ users_all - users }} inactive{% endif %}</span>
+    </div>
+    <p class="muted">Who can sign in, their role and their groups. Make someone inactive, delete them or hand over their follow-ups.</p>
+    <p><a class="button" href="{{ url_for('admin.users') }}">Manage users</a></p>
+  </section>
+  <section class="card list-card">
+    <div class="head">
+      <h2><a href="{{ url_for('admin.groups') }}">Groups</a></h2>
+      <span class="muted">{{ groups }} active{% if groups_all > groups %}, {{ groups_all - groups }} inactive{% endif %}</span>
+    </div>
+    <p class="muted">Teams people belong to. Later they can be given permissions for specific functions.</p>
+    <p><a class="button" href="{{ url_for('admin.groups') }}">Manage groups</a></p>
+  </section>
+  <section class="card list-card">
+    <div class="head">
+      <h2><a href="{{ url_for('admin.lists') }}">Lists</a></h2>
+    </div>
+    <p class="muted">The choices people pick from on the entry form and in search.</p>
+    <ul class="plain">
+      {% for o in lists %}
+      <li><a href="{{ url_for('admin.lookup_list', kind=o.kind) }}">{{ o.spec.label }}</a> <span class="muted">({{ o.active }} active)</span></li>
+      {% endfor %}
+    </ul>
+    <p><a class="button" href="{{ url_for('admin.lists') }}">All lists</a></p>
+  </section>
+  <section class="card list-card">
+    <div class="head">
+      <h2><a href="{{ url_for('admin.labels_edit') }}">Labels</a></h2>
+    </div>
+    <p class="muted">What the lists and the {{ L.lc('area') }} field are called everywhere in Merchant, including reports.
+      Rename them to use Merchant for something else.</p>
+    <p><a class="button" href="{{ url_for('admin.labels_edit') }}">Edit labels</a></p>
+  </section>
+</div>
+{% endblock %}

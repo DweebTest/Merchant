@@ -152,9 +152,24 @@ as a PDF, for any date range and set of clusters:
 * **Priority follow-ups**: open follow-ups that are overdue, due within two
   weeks, or high priority.
 
+## Configuration
+
+Administrators get a **Configuration** link in the top bar. It leads to one
+page with everything they can set up: users, groups, the lists below, and
+labels.
+
+### Labels
+
+**Configuration > Labels** renames the lists and the "Area impacted" field
+everywhere: the entry form, search, the admin pages and the reports. For
+example, to track IT requests you could call economic clusters "Departments"
+and opportunity types "Request types", then change the values themselves
+under Lists. Leave a box empty to keep the default. Report titles (such as
+"Emerging sector trends") don't change.
+
 ## Lists
 
-Administrators edit the choices people pick from under **Lists**: economic
+Administrators edit the choices people pick from under **Configuration > Lists**: economic
 clusters, opportunity types, priorities and follow-up statuses. Each can be
 added, renamed, reordered (sort order), retired (untick **Active**) or
 deleted. Retired values stay on old entries but aren't offered for new ones.

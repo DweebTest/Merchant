@@ -133,3 +133,14 @@ class EntryForm(FlaskForm):
     )
     attachments = MultipleFileField("Attach files")
     submit = SubmitField("Save entry")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The list names can be changed under Configuration > Labels.
+        from .labels import labels
+        L = labels()
+        self.clusters.label.text = L.clusters
+        self.opportunity_types.label.text = L.types
+        self.college_area.label.text = L.area
+        self.priority_id.label.text = L.priority
+        self.status_id.label.text = L.status

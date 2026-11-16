@@ -1,4 +1,4 @@
-"""Administration: users, groups and the lists people pick from (clusters,
+"""Configuration: users, groups, labels and the lists people pick from (clusters,
 opportunity types, priorities and follow-up statuses)."""
 from functools import wraps
 
@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import delete as sql_delete, func, or_, select, update
 
 from ..extensions import db
+from ..labels import FIELDS as LABEL_FIELDS, GROUPS as LABEL_GROUPS, labels, save as save_labels
 from ..forms import ConfirmForm, GroupForm, LookupForm, UserForm
 from ..models import (Attachment, Cluster, Entry, FollowUpStatus, Group, OpportunityType, Priority, SavedFilter, User,
                       default_choice, entry_clusters, entry_opportunity_types)
@@ -14,16 +15,16 @@ from ..models import (Attachment, Cluster, Entry, FollowUpStatus, Group, Opportu
 bp = Blueprint("admin", __name__)
 
 LOOKUPS = {
-    "clusters": {"model": Cluster, "label": "Economic clusters", "singular": "cluster",
+    "clusters": {"model": Cluster, "term": "cluster",
                  "link": entry_clusters.c.cluster_id,
-                 "help": "Sectors an entry can be tagged with. An entry can have several."},
-    "types": {"model": OpportunityType, "label": "Opportunity types", "singular": "opportunity type",
+                 "help": "Tags for an entry, such as sectors. An entry can have several."},
+    "types": {"model": OpportunityType, "term": "type",
               "link": entry_opportunity_types.c.opportunity_type_id,
-              "help": "Kinds of opportunity. Each can feed the funding or partnership report."},
-    "priorities": {"model": Priority, "label": "Priorities", "singular": "priority",
+              "help": "A second set of tags, such as kinds of opportunity. Each can feed the funding or partnership report."},
+    "priorities": {"model": Priority, "term": "priority",
                    "link": Entry.priority_id, "single": True,
                    "help": "How urgent an entry is. Reports list them in this order, most urgent first."},
-    "statuses": {"model": FollowUpStatus, "label": "Follow-up statuses", "singular": "follow-up status",
+    "statuses": {"model": FollowUpStatus, "term": "status",
                  "link": Entry.status_id, "single": True,
                  "help": "Where a follow-up stands. Anyone signed in can change an entry's status."},
 }
@@ -64,7 +65,29 @@ def _active_admin_count(excluding=None):
 @bp.route("/")
 @admin_required
 def index():
-    return redirect(url_for("admin.users"))
+    """Configuration: every admin setting in one place."""
+    count = lambda m: db.session.scalar(select(func.count()).select_from(m))
+    active = lambda m: db.session.scalar(select(func.count()).select_from(m)
+                                         .where(m.__table__.c.is_active.is_(True)))
+    lists = [{"kind": k, "spec": _named(s), "active": active(s["model"])} for k, s in LOOKUPS.items()]
+    return render_template("admin/configuration.html", lists=lists,
+                           users=active(User), users_all=count(User), groups=active(Group), groups_all=count(Group))
+
+
+@bp.route("/labels", methods=["GET", "POST"])
+@admin_required
+def labels_edit():
+    """Rename the lists and the area field, so Merchant can track something other than market intel."""
+    form = ConfirmForm()
+    current = labels()
+    if form.validate_on_submit():
+        values = {k: " ".join(request.form.get(k, "").split())[:60] for k in LABEL_FIELDS}
+        if request.form.get("reset"):
+            values = {}
+        save_labels(values)
+        flash("Labels reset to the defaults." if request.form.get("reset") else "Saved labels.", "success")
+        return redirect(url_for("admin.labels_edit"))
+    return render_template("admin/labels.html", form=form, groups=LABEL_GROUPS, fields=LABEL_FIELDS, current=current)
 
 
 # --- Users ------------------------------------------------------------------
@@ -290,7 +313,15 @@ def group_delete(group_id):
 # --- Lists: clusters, opportunity types, priorities, statuses ----------------
 
 def _lookup(kind):
-    return LOOKUPS.get(kind) or abort(404)
+    spec = LOOKUPS.get(kind) or abort(404)
+    return _named(spec)
+
+
+def _named(spec):
+    """The spec with its current (admin-editable) names filled in."""
+    L, term = labels(), spec["term"]
+    plural = {"cluster": "clusters", "type": "types", "priority": "priorities", "status": "statuses"}[term]
+    return {**spec, "label": getattr(L, plural), "singular": L.lc(term)}
 
 
 def _usage(spec, open_only=False):
@@ -324,6 +355,7 @@ def lists():
     """One page for all the lists people pick from."""
     overview = []
     for kind, spec in LOOKUPS.items():
+        spec = _named(spec)
         model = spec["model"]
         rows = db.session.scalars(select(model).order_by(model.sort_order, model.name)).all()
         overview.append({"kind": kind, "spec": spec, "rows": rows,
