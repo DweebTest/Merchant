@@ -122,6 +122,14 @@ def create_app(config_class=None):
         themes = available_themes()
         return {"themes": themes, "theme": current_theme(themes)}
 
+    from .labels import labels, lc
+    app.jinja_env.filters["lc"] = lc
+    app.jinja_env.globals["labels"] = labels  # for macros, which don't see the page's context
+
+    @app.context_processor
+    def site_labels():
+        return {"L": labels()}
+
     @app.context_processor
     def sign_in_options():
         from .auth.saml import saml_enabled

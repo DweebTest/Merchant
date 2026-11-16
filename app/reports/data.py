@@ -12,6 +12,7 @@ from sqlalchemy import and_, exists, select
 from sqlalchemy.orm import selectinload
 
 from ..extensions import db
+from ..labels import labels
 from ..models import Cluster, Entry, FollowUpStatus, OpportunityType, entry_clusters, entry_opportunity_types
 
 
@@ -49,21 +50,28 @@ class ReportSpec:
     default_days: int
     uses_period: bool = True
 
+    @property
+    def text(self):
+        """The description with the current list names (Configuration > Labels) filled in."""
+        L = labels()
+        return self.description.format(cluster=L.lc("cluster"), clusters=L.lc("clusters"), types=L.lc("types"),
+                                       priority=L.lc("priority"))
+
 
 SPECS = {
     s.key: s
     for s in [
         ReportSpec("recent", "Recent opportunities",
-                   "Everything entered in a period, newest first, with a count by cluster.", 30),
+                   "Everything entered in a period, newest first, with a count by {cluster}.", 30),
         ReportSpec("trends", "Emerging sector trends",
-                   "Which clusters, opportunity types and organizations are coming up more or less "
+                   "Which {clusters}, {types} and organizations are coming up more or less "
                    "often than in the period before.", 180),
         ReportSpec("funding", "Potential funding opportunities",
                    "Potential donors, sponsors and grants (or whichever types an admin marks as funding).", 90),
         ReportSpec("partnership", "Partnership leads",
                    "Partnership and applied research leads, grouped by organization.", 90),
         ReportSpec("followups", "Priority follow-ups",
-                   "Open follow-ups that are overdue, due in the next two weeks, or marked high priority. "
+                   "Open follow-ups that are overdue, due in the next two weeks, or marked high {priority}. "
                    "Always shows the current state, so the date range doesn't apply.", 0, uses_period=False),
     ]
 }
@@ -125,9 +133,9 @@ def _period_text(date_from, date_to):
 
 def _filters_text(cluster_ids):
     if not cluster_ids:
-        return "All economic clusters"
+        return "All " + labels().lc("clusters")
     names = db.session.scalars(select(Cluster.name).where(Cluster.id.in_(cluster_ids)).order_by(Cluster.sort_order))
-    return "Clusters: " + ", ".join(names)
+    return labels().clusters + ": " + ", ".join(names)
 
 
 def _contact_text(e):
@@ -151,6 +159,7 @@ def _change(now, before):
 # --- Reports ----------------------------------------------------------------
 
 def recent_report(date_from, date_to, cluster_ids):
+    L = labels()
     entries = _entries(*_in_period(date_from, date_to), *_cluster_filter(cluster_ids))
     report = Report("recent", SPECS["recent"].title, _period_text(date_from, date_to), _filters_text(cluster_ids))
     report.summary = [
@@ -162,17 +171,17 @@ def recent_report(date_from, date_to, cluster_ids):
 
     by_cluster = Counter(c.name for e in entries for c in e.clusters)
     report.sections.append(Section(
-        "Entries by economic cluster",
-        ["Cluster", "Entries"],
+        f"Entries by {L.lc('cluster')}",
+        [L.cluster, "Entries"],
         [[name, count] for name, count in by_cluster.most_common()],
-        intro="An entry tagged with two clusters counts in both.",
+        intro=f"An entry tagged with two {L.lc('clusters')} counts in both.",
         widths=[3, 1],
         chart=by_cluster.most_common(),
-        chart_title="Entries by cluster",
+        chart_title=f"Entries by {L.lc('cluster')}",
     ))
     report.sections.append(Section(
         "All entries",
-        ["Date", "Organization", "Clusters / types", "Description", "Suggested next step", "Status"],
+        ["Date", "Organization", f"{L.clusters} / {L.lc('types')}", "Description", "Suggested next step", L.status],
         [[
             _fmt(e.entry_date),
             e.organization.name,
@@ -187,6 +196,7 @@ def recent_report(date_from, date_to, cluster_ids):
 
 
 def trends_report(date_from, date_to, cluster_ids):
+    L = labels()
     length = (date_to - date_from).days + 1
     prev_to = date_from - timedelta(days=1)
     prev_from = prev_to - timedelta(days=length - 1)
@@ -209,8 +219,8 @@ def trends_report(date_from, date_to, cluster_ids):
     clusters_now = Counter(c.name for e in current for c in e.clusters)
     clusters_before = Counter(c.name for e in previous for c in e.clusters)
     report.sections.append(Section(
-        "Activity by economic cluster",
-        ["Cluster", "This period", "Previous period", "Change"],
+        f"Activity by {L.lc('cluster')}",
+        [L.cluster, "This period", "Previous period", "Change"],
         compare(clusters_now, clusters_before),
         intro=compare_note,
         widths=[3, 1.2, 1.2, 1],
@@ -233,8 +243,8 @@ def trends_report(date_from, date_to, cluster_ids):
         rows = [[name] + [monthly[name][m] for m in months]
                 for name, _ in clusters_now.most_common()]
         report.sections.append(Section(
-            "Entries per month by cluster",
-            ["Cluster"] + [f"{m:%b %Y}" for m in months],
+            f"Entries per month by {L.lc('cluster')}",
+            [L.cluster] + [f"{m:%b %Y}" for m in months],
             rows,
             widths=[2.5] + [1] * len(months),
         ))
@@ -242,8 +252,8 @@ def trends_report(date_from, date_to, cluster_ids):
     types_now = Counter(t.name for e in current for t in e.opportunity_types)
     types_before = Counter(t.name for e in previous for t in e.opportunity_types)
     report.sections.append(Section(
-        "Opportunity types",
-        ["Opportunity type", "This period", "Previous period", "Change"],
+        L.types,
+        [L.type, "This period", "Previous period", "Change"],
         compare(types_now, types_before),
         widths=[3, 1.2, 1.2, 1],
     ))
@@ -267,6 +277,7 @@ def _grouped_type_names(entry, group):
 
 
 def funding_report(date_from, date_to, cluster_ids):
+    L = labels()
     entries = _entries(
         *_in_period(date_from, date_to), *_cluster_filter(cluster_ids), _type_group_filter("funding"),
     )
@@ -283,17 +294,17 @@ def funding_report(date_from, date_to, cluster_ids):
             _short(e.description, 350),
             _short(e.next_step, 200),
             _contact_text(e),
-            f"{e.status.name}\n{e.priority.name} priority"
+            f"{e.status.name}\n{e.priority.name} {L.lc('priority')}"
             + (f"\nby {_fmt(e.follow_up_date)}" if e.follow_up_date else ""),
         ] for e in items]
 
-    columns = ["Date", "Organization", "Type", "Description", "Next step", "Contact", "Follow-up"]
+    columns = ["Date", "Organization", L.type, "Description", "Next step", "Contact", "Follow-up"]
     widths = [1.1, 1.6, 1.3, 3.2, 2.0, 1.6, 1.2]
     # The priority list's order: whatever is first is most urgent.
     open_entries.sort(key=lambda e: (not e.priority.is_high, e.priority.sort_order, e.follow_up_date or date.max))
     report.sections.append(Section(
         "Open funding leads", columns, rows(open_entries), widths=widths,
-        intro="High priority first, then by follow-up date.",
+        intro=f"High {L.lc('priority')} first, then by follow-up date.",
         empty_text="No open funding leads in this period.",
     ))
     closed = [e for e in entries if not e.status.is_open]
@@ -303,6 +314,7 @@ def funding_report(date_from, date_to, cluster_ids):
 
 
 def partnership_report(date_from, date_to, cluster_ids):
+    L = labels()
     entries = _entries(
         *_in_period(date_from, date_to), *_cluster_filter(cluster_ids), _type_group_filter("partnership"),
     )
@@ -330,14 +342,14 @@ def partnership_report(date_from, date_to, cluster_ids):
         ])
     report.sections.append(Section(
         "Leads by organization",
-        ["Organization", "Leads", "Latest", "Clusters", "Contacts", "Latest next step", "Follow-up"],
+        ["Organization", "Leads", "Latest", L.clusters, "Contacts", "Latest next step", "Follow-up"],
         org_rows,
         widths=[1.8, 0.7, 1.1, 1.8, 1.5, 3.0, 1.0],
         empty_text="No partnership leads in this period.",
     ))
     report.sections.append(Section(
         "All partnership entries",
-        ["Date", "Organization", "Type", "Description", "Next step", "Status"],
+        ["Date", "Organization", L.type, "Description", "Next step", L.status],
         [[
             _fmt(e.entry_date), e.organization.name, _grouped_type_names(e, "partnership"),
             _short(e.description, 350), _short(e.next_step, 200),
@@ -350,6 +362,7 @@ def partnership_report(date_from, date_to, cluster_ids):
 
 
 def followups_report(date_from, date_to, cluster_ids, today=None):
+    L = labels()
     today = today or date.today()
     soon = today + timedelta(days=14)
     entries = _entries(
@@ -365,7 +378,7 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
     report.summary = [
         ("Overdue", len(overdue)),
         ("Due in 14 days", len(due_soon)),
-        ("Other high priority", len(high_other)),
+        (f"Other high {L.lc('priority')}", len(high_other)),
         ("All open follow-ups", len(entries)),
     ]
 
@@ -380,15 +393,15 @@ def followups_report(date_from, date_to, cluster_ids, today=None):
             (e.owner.display_name + ("" if e.owner.is_active else " (former user)")) if e.owner else "Nobody",
         ] for e in items]
 
-    columns = ["Follow up by", "Organization", "Next step", "Opportunity types", "Priority", "Status", "Looked after by"]
+    columns = ["Follow up by", "Organization", "Next step", L.types, L.priority, L.status, "Looked after by"]
     widths = [1.1, 1.7, 3.6, 1.9, 0.8, 1.0, 1.3]
     report.sections.append(Section("Overdue", columns, rows(overdue), widths=widths,
                                    empty_text="Nothing overdue."))
     report.sections.append(Section("Due in the next 14 days", columns, rows(due_soon), widths=widths,
                                    empty_text="Nothing due in the next two weeks."))
-    report.sections.append(Section("Other high-priority follow-ups", columns, rows(high_other), widths=widths,
-                                   intro="High priority with no follow-up date, or one more than two weeks away.",
-                                   empty_text="No other high-priority follow-ups."))
+    report.sections.append(Section(f"Other high-{L.lc('priority')} follow-ups", columns, rows(high_other), widths=widths,
+                                   intro=f"High {L.lc('priority')} with no follow-up date, or one more than two weeks away.",
+                                   empty_text=f"No other high-{L.lc('priority')} follow-ups."))
     return report
 
 

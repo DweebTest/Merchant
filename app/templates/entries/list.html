@@ -50,28 +50,28 @@
     </fieldset>
 
     <fieldset>
-      <legend>Economic cluster</legend>
+      <legend>{{ L.cluster }}</legend>
       {% for c in clusters %}
       <label class="check"><input type="checkbox" name="cluster" value="{{ c.id }}" {% if c.id in args.clusters %}checked{% endif %}> {{ c.name }}{% if not c.is_active %} <span class="muted">(retired)</span>{% endif %}</label>
       {% endfor %}
     </fieldset>
 
     <fieldset>
-      <legend>Opportunity type</legend>
+      <legend>{{ L.type }}</legend>
       {% for t in types %}
       <label class="check"><input type="checkbox" name="type" value="{{ t.id }}" {% if t.id in args.types %}checked{% endif %}> {{ t.name }}{% if not t.is_active %} <span class="muted">(retired)</span>{% endif %}</label>
       {% endfor %}
     </fieldset>
 
     <fieldset>
-      <legend>Follow-up</legend>
+      <legend>{{ L.status }}</legend>
       {% for value, label in statuses %}
       <label class="check"><input type="checkbox" name="status" value="{{ value }}" {% if value in args.status %}checked{% endif %}> {{ label }}</label>
       {% endfor %}
     </fieldset>
 
     <fieldset>
-      <legend>Priority</legend>
+      <legend>{{ L.priority }}</legend>
       {% for value, label in priorities %}
       <label class="check"><input type="checkbox" name="priority" value="{{ value }}" {% if value in args.priority %}checked{% endif %}> {{ label }}</label>
       {% endfor %}

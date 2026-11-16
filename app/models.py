@@ -188,6 +188,14 @@ class FollowUpStatus(LookupMixin, db.Model):
     colour = db.Column(db.String(10), nullable=False, default="grey", server_default="grey")
 
 
+class Setting(db.Model):
+    """Small site-wide settings an admin can change, such as the names of the lists."""
+    __tablename__ = "settings"
+
+    key = db.Column(db.String(64), primary_key=True)
+    value = db.Column(db.String(200), nullable=False, default="")
+
+
 def default_choice(model):
     """The value new entries start with: the one marked default, else the first active one."""
     return (db.session.scalar(select(model).where(model.is_default.is_(True), model.is_active.is_(True)))

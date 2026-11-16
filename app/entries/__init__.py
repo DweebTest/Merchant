@@ -21,6 +21,7 @@ from werkzeug.utils import secure_filename
 
 from ..extensions import db
 from ..forms import ConfirmForm, EntryForm
+from ..labels import labels
 from ..models import (
     Attachment,
     Cluster,
@@ -427,7 +428,7 @@ def set_status(entry_id):
     if ConfirmForm().validate_on_submit() and status_id in allowed:
         entry.status_id = status_id
         db.session.commit()
-        flash("Follow-up status updated.", "success")
+        flash(f"{labels().status} updated.", "success")
     return redirect(url_for("entries.detail", entry_id=entry.id))
 
 
